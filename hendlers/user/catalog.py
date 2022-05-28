@@ -2,7 +2,7 @@ from config import dp, bot
 from aiogram import types
 from aiogram.types import ReplyKeyboardMarkup
 from filters import IsUser
-from app import btnMenu, btnbar, btnTime, btnBrn, btnkor
+from app import btnMenu, btnbar, btnTime, btnBrn, btndlv, cart
 
 """btn_bar"""
 btnvin_po_bakal = "🍾 АПЕРЕТИВ"
@@ -39,11 +39,11 @@ async def catalog(message: types.Message):
 """handler menu"""
 
 
-@dp.message_handler(IsUser(), text=btnkitchen)
-async def btn_kitchen(message: types.Message):
-    markup = ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.row(btnkitchen, btnbzn, btngril).add(btngor, btnsup, btnkids).add(btnsous, btndes, btnnaz)
-    await message.answer("https://telegra.ph/Menyu-04-20-2", reply_markup=markup)
+# @dp.message_handler(IsUser(), text=btnkitchen)
+# async def btn_kitchen(message: types.Message):
+#     markup = ReplyKeyboardMarkup(resize_keyboard=True)
+#     markup.row(btnkitchen, btnbzn, btngril).add(btngor, btnsup, btnkids).add(btnsous, btndes, btnnaz)
+#     await message.answer("https://telegra.ph/Menyu-04-20-2", reply_markup=markup)
 
 
 @dp.message_handler(IsUser(), text=btnbzn)
@@ -98,7 +98,7 @@ async def btn_des(message: types.Message):
 @dp.message_handler(IsUser(), text=btnnaz)
 async def btn_naz(message: types.Message):
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.row(btnMenu, btnbar, btnTime).add(btnBrn, btnkor)
+    markup.row(btnMenu, btnbar, btnTime).add(btnBrn, btndlv)
     await message.answer("ПЕРЕХОД НА ГЛАВНОЕ МЕНЮ", reply_markup=markup)
 
 

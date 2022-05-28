@@ -1,15 +1,15 @@
 import logging
-from config import dp, bot, db, loop
+from config import dp, db, loop
 import hendlers
 from aiogram import executor
 from aiogram import types
-from aiogram.types import ReplyKeyboardRemove, ReplyKeyboardMarkup
+from aiogram.types import ReplyKeyboardMarkup
 import filters
 from filters import IsUser, IsAdmin
 
 filters.setup(dp)
 
-cart = '🛒 Корзина'
+cart = '🛒 Перейти в Корзину'
 balance = '💰 Баланс'
 settings = '⚙️ Настройка каталога'
 questions = '❓ Вопросы'
@@ -20,14 +20,13 @@ btnBrn = "📞 ЗАБРОНИРОВАТЬ"
 btnTime = "🕗 РЕЖИМ РАБОТЫ"
 btnbar = "🍾 БАР"
 btndlv = "🎒 ДОСТАВКА"
-btnkor = "🗑 КОРЗИНА"
 orders = '🚚 Заказы'
 
 
 @dp.message_handler(IsUser(), commands="start")
 async def cmd_start(message: types.Message):
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.row(btnMenu, btnbar, btnTime).add(btnBrn, btndlv, cart)
+    markup.row(btnMenu, btnbar, btnTime).add(btnBrn, btndlv)
     await message.answer('ДОБРО ПОЖАЛОВАТЬ, {0.first_name}\n'
                          'Я Ваш личный бот, помощник.\n'
                          'Я помогу Вам ознакомиться с меню, режимом работы ресторана и '

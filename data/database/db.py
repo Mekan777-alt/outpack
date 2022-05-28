@@ -35,7 +35,7 @@ class Database(object):
 
     def fetchall(self, arg, values=None):
         if values is None:
-            self.cur.execute(arg)
+            self.cur.execute(arg)   
         else:
             self.cur.execute(arg, values)
         return self.cur.fetchall()
