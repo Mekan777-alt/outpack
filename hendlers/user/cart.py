@@ -9,7 +9,7 @@ from config import dp, db, bot
 from filters import IsUser
 from hendlers.admin.add import check_markup, back_message, all_right_message, back_markup, confirm_markup, \
     confirm_message
-from hendlers.user.dostavka import product_markup_2, product_cb_2
+from hendlers.user.dostavka import product_markup_2, product_cb, product_cb_2
 
 BRON_CHANNEL = "@main_channel2"
 
@@ -19,7 +19,7 @@ send_phone = ReplyKeyboardMarkup(resize_keyboard=True).add(b54)
 TOKEN_PAYMENTS = "401643678:TEST:e7a64b6e-7d82-40ab-bf92-a4c121bcb3ac"
 
 
-@dp.callback_query_handler(IsUser(), product_cb_2.filter(action='cart'))
+@dp.callback_query_handler(IsUser(), product_cb.filter(action='cart'))
 async def process_cart(call: types.CallbackQuery, state: FSMContext):
     cart_data = db.fetchall(
         'SELECT * FROM cart WHERE cid=?', (call.message.chat.id,))
@@ -52,7 +52,7 @@ async def process_cart(call: types.CallbackQuery, state: FSMContext):
                     data['products'][idx] = [title, price, count_in_cart]
 
                 markup = product_markup_2(idx, count_in_cart)
-                text = f'<b>{title}</b>\n\n{body}\n\nЦена: {price}₽.'
+                text = f'<b>{title}</b>\n\n\nЦена: {price}₽.'
 
                 await call.message.answer_photo(photo=image,
                                                 caption=text,
@@ -62,7 +62,8 @@ async def process_cart(call: types.CallbackQuery, state: FSMContext):
             markup = ReplyKeyboardMarkup(resize_keyboard=True, selective=True)
             markup.add('📦 Оформить заказ').add("🗑 Очистить корзину")
 
-            await call.message.answer('Перейти к оформлению?',
+            await call.message.answer('Отличный выбор, теперь эти блюда в корзине.\n'
+                                      'Нажми на кнопки перейти к оформлению или назад',
                                       reply_markup=markup)
 
 
@@ -145,8 +146,16 @@ async def delete_cart(message: types.Message):
 
 @dp.message_handler(IsUser(), text='📦 Оформить заказ')
 async def process_checkout(message: Message, state: FSMContext):
-    await CheckoutState.check_cart.set()
-    await checkout(message, state)
+    async with state.proxy() as data:
+        total_price = 0
+        for title, price, count_in_cart in data['products'].values():
+            tp = count_in_cart * price
+            total_price += tp
+        if total_price < 1500:
+            await message.answer(f"Еще закажите на {1500 - total_price} рублей чтобы совершить заказ")
+        else:
+            await CheckoutState.check_cart.set()
+            await checkout(message, state)
 
 
 async def checkout(message, state):
@@ -321,14 +330,14 @@ async def process_successful_payment(message: types.Message, state: FSMContext):
         an = ''
         for title, price, count_in_cart in data['products'].values():
             tp = count_in_cart * price
-            an += f'<b>{title}</b> - {count_in_cart}шт\n'
+            an += f'<b>{title}</b> - {count_in_cart}шт = {price}рублей\n'
             total_price += tp
         now = datetime.now()
 
         await bot.send_message(BRON_CHANNEL, f"Доставка №1\n"
                                              f"\n"
                                              f"Имя получателя: {data['name']}\n"
-                                             f"Время: {now.hour}:{now.minute}:{now.second}\n"
+                                             f"Время: {now.hour}:{now.minute}\n"
                                              f"Дата: {now.date().strftime('%d-%m-%y')}\n"
                                              f"Адрес доставки: {data['address']}\n"
                                              f"\n"
@@ -336,6 +345,7 @@ async def process_successful_payment(message: types.Message, state: FSMContext):
                                              f"{an}\n"
                                              f"Общая стоимость: {total_price} рублей\n"
                                              f"Номер телефона: {data['phone_number']}:")
+        db.query("""DELETE FROM cart;""")
     await state.finish()
 
 # def product_markup_2(idx='', price=0):

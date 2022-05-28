@@ -15,9 +15,8 @@ def product_markup_2(idx, count):
     back_btn = InlineKeyboardButton('➖', callback_data=product_cb_2.new(id=idx, action='decrease'))
     count_btn = InlineKeyboardButton(count, callback_data=product_cb_2.new(id=idx, action='count'))
     next_btn = InlineKeyboardButton('➕️', callback_data=product_cb_2.new(id=idx, action='increase'))
-    cart_btn = InlineKeyboardButton(cart, callback_data=product_cb_2.new(id=idx, action='cart'))
 
-    markup.row(back_btn, count_btn, next_btn).add(cart_btn)
+    markup.row(back_btn, count_btn, next_btn)
 
     return markup
 
@@ -31,7 +30,7 @@ def product_markup(idx='', price=0):
     markup = InlineKeyboardMarkup()
     markup.add(
         InlineKeyboardButton(f'Заказать за - {price}₽', callback_data=product_cb.new(id=idx, action='add')))
-
+    markup.add(InlineKeyboardButton(cart, callback_data=product_cb.new(id=idx, action='cart')))
     return markup
 
 
@@ -60,7 +59,8 @@ def cart_markup():
 
 @dp.message_handler(IsUser(), text=btndlv)
 async def dyl_start(message: types.Message):
-    await message.answer("ВЫБЕРИТЕ РАЗДЕЛ", reply_markup=categories_markup())
+    await message.answer("Минимальная сумма заказа состовляет 1500 рублей\n"
+                         "ВЫБЕРИТЕ РАЗДЕЛ", reply_markup=categories_markup())
 
 
 @dp.callback_query_handler(IsUser(), category_cb.filter(action='view'))
@@ -79,7 +79,7 @@ async def add_product_callback_handler(query: types.CallbackQuery, callback_data
              (query.message.chat.id, callback_data['id']))
 
     await query.answer('Товар добавлен в корзину!')
-    await query.message.edit_reply_markup(reply_markup=product_markup_2(callback_data['id'], 1))
+    #await query.message.edit_reply_markup(reply_markup=product_markup_2(callback_data['id'], 1))
     # await query.message.delete()
 
 
