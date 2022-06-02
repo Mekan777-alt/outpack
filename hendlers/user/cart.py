@@ -11,7 +11,6 @@ from hendlers.admin.add import check_markup, back_message, all_right_message, ba
     confirm_message
 from hendlers.user.dostavka import product_markup_2, product_cb, product_cb_2
 
-
 b54 = KeyboardButton("📞 Отправить свой номер", request_contact=True)
 send_phone = ReplyKeyboardMarkup(resize_keyboard=True).add(b54)
 
@@ -121,6 +120,7 @@ class CheckoutState(StatesGroup):
     address = State()
     phone_number = State()
     confirm = State()
+    money = State()
 
 
 successful_payment = '''
@@ -238,14 +238,18 @@ async def process_name(message: Message, state: FSMContext):
     async with state.proxy() as data:
 
         data['name'] = message.text
+        await CheckoutState.next()
 
-        if 'address' in data.keys():
-
-            await confirm(message, state)
-            await CheckoutState.confirm.set()
+        if data['dylevery'] == samovyvoz:
+            await CheckoutState.phone_number.set()
+            await message.answer("Так, теперь мне нужен твой номер телефона.\n"
+                                 "Исключительно в деловых целях 🙂", reply_markup=send_phone)
+        # if 'address' in data.keys():
+        #
+        #     await confirm(message, state)
+        #     await CheckoutState.confirm.set()
 
         else:
-            await CheckoutState.next()
             await message.answer('Укажите свой адрес места жительства.',
                                  reply_markup=back_markup())
 
@@ -286,24 +290,40 @@ async def phone_number(message: Message, state: FSMContext):
         await confirm(message, state)
 
 
-async def confirm(message, state: FSMContext):
+async def confirm(message, state):
     async with state.proxy() as data:
-        print(data)
         total_price = 0
         an = ''
-        for title, price, count_in_cart in data['products'].values():
-            tp = count_in_cart * price
-            an += f'<b>{title}</b> - {count_in_cart}шт\n'
-            total_price += tp
-        await message.answer(f"Убедитесь, что все правильно оформлено и подтвердите заказ.\n"
-                             f"Данные заказа:\n"
-                             f"Получатель: {data['name']}\n"
-                             # f"Номер телефона получателя {data['phone_number']}\n"
-                             f"Общая стоимость {total_price} рублей\n"
-                             f"\n"
-                             f"Ваш заказ:\n"
-                             f"{an}",
-                             reply_markup=confirm_markup())
+        if data['dylevery'] == dostavka:
+            for title, price, count_in_cart in data['products'].values():
+                tp = count_in_cart * price
+                an += f'<b>{title}</b> - {count_in_cart}шт\n'
+                total_price += tp
+            await message.answer(f"Убедитесь, что все правильно оформлено и подтвердите заказ.\n"
+                                 f"Данные заказа:\n"
+                                 f"Получатель: {data['name']}\n"
+                                 #f"Номер телефона получателя {data['phone_number']}\n"
+                                 f"Общая стоимость {total_price} рублей\n"
+                                 f"\n"
+                                 f"Ваш заказ:\n"
+                                 f"{an}",
+                                 reply_markup=confirm_markup())
+        else:
+            for title, price, count_in_cart in data['products'].values():
+                tp = count_in_cart * price
+                an += f'<b>{title}</b> - {count_in_cart}шт\n'
+                total_price += tp
+            await message.answer(f"Убедитесь, что все правильно оформлено и подтвердите заказ.\n"
+                                 f"Данные заказа:\n"
+                                 f"Получатель: {data['name']}\n"
+                                 # f"Номер телефона получателя {data['address']}\n"
+                                 f"Общая стоимость {total_price} рублей\n"
+                                 f"\n"
+                                 f"Ваш заказ:\n"
+                                 f"{an}"
+                                 f"Хостес вам перезвонит для подтверждение заказа",
+
+                                 reply_markup=confirm_markup())
 
 
 @dp.message_handler(IsUser(), lambda message: message.text not in [confirm_message, back_message],
@@ -319,6 +339,9 @@ async def process_confirm(message: Message, state: FSMContext):
     async with state.proxy() as data:
         await message.answer('Изменить адрес с <b>' + data['address'] + '</b>?',
                              reply_markup=back_markup())
+
+nalicka = '💵 Наличные'
+karta = '💳 Карта'
 
 
 @dp.message_handler(IsUser(), text=confirm_message, state=CheckoutState.confirm)
@@ -346,9 +369,12 @@ async def process_confirm(message: Message, state: FSMContext):
         products = [idx + '=' + str(quantity)
                     for idx, quantity in db.fetchall('''SELECT idx, quantity FROM cart
         WHERE cid=?''', (cid,))]  # idx=quantity
-
-        db.query('INSERT INTO orders VALUES (?, ?, ?, ?, ?)',
-                 (cid, data['name'], data['address'], data['phone_number'], ' '.join(products)))
+        if data['dylevery'] == samovyvoz:
+            db.query("INSERT INTO orders VALUES (?, ?, 'False,', ?, ?)",
+                     (cid, data['name'], data['phone_number'], ' '.join(products)))
+        else:
+            db.query('INSERT INTO orders VALUES (?, ?, ?, ?, ?)',
+                     (cid, data['name'], data['address'], data['phone_number'], ' '.join(products)))
 
         # db.query('DELETE FROM cart WHERE cid=?', (cid,))
 
@@ -357,28 +383,23 @@ async def process_confirm(message: Message, state: FSMContext):
 
 @dp.message_handler(content_types=ContentType.SUCCESSFUL_PAYMENT)
 async def process_successful_payment(message: types.Message, state: FSMContext):
-    print('successful_payment:')
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add(btnMenu, btnbar, btnTime).add(btnBrn, btndlv)
     pmnt = message.successful_payment.to_python()
     for key, val in pmnt.items():
         print(f'{key} = {val}')
     await bot.send_message(
-        message.chat.id,
-        MESSAGE['successful_payments'],
-        reply_markup=markup)
+        message.chat.id, MESSAGE['successful_payments'], reply_markup=markup)
     async with state.proxy() as data:
-        count = 0
         total_price = 0
         an = ''
         for title, price, count_in_cart in data['products'].values():
             tp = count_in_cart * price
             an += f'<b>{title}</b> - {count_in_cart}шт = {tp}рублей\n'
             total_price += tp
-            count += 1
         now = datetime.now()
-
-        await bot.send_message(BRON_CHANNEL, f"Доставка №{count}\n"
+        if data['dylevery'] == dostavka:
+            await bot.send_message(BRON_CHANNEL, f"Доставка\n"
                                              f"\n"
                                              f"Имя получателя: {data['name']}\n"
                                              f"Время: {now.hour}:{now.minute}\n"
@@ -390,7 +411,22 @@ async def process_successful_payment(message: types.Message, state: FSMContext):
                                              f"Способ получения: {data['dylevery']}\n"
                                              f"Общая стоимость: {total_price} рублей\n"
                                              f"Номер телефона: {data['phone_number']}:")
-        db.query("""DELETE FROM cart WHERE cid=?""", (message.chat.id,))
+            db.query("""DELETE FROM cart WHERE cid=?""", (message.chat.id,))
+        else:
+            await bot.send_message(BRON_CHANNEL, f"Самовывоз \n"
+                                                 f"\n"
+                                                 f"Имя получателя: {data['name']}\n"
+                                                 f"Время: {now.hour}:{now.minute}\n"
+                                                 f"Дата: {now.date().strftime('%d-%m-%y')}\n"
+                                                 f"Способ получения: {data['dylevery']}\n"
+                                                 f"Общая стоимость: {total_price} рублей\n"
+                                                 f"Номер телефона: {data['phone_number']}\n"
+                                                 f"Перезвонить для уточнения к какому времени должен быть готов заказ\n"
+                                                 f"\n"
+                                                 f"Блюдо: \n"
+                                                 f"{an}\n")
+            db.query("""DELETE FROM cart WHERE cid=?""", (message.chat.id,))
+
     await state.finish()
 
 # def product_markup_2(idx='', price=0):
