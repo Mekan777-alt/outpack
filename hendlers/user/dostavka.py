@@ -4,6 +4,11 @@ from filters import IsUser
 from app import btndlv, cart
 from aiogram import types
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, ChatActions
+from hendlers.user.catalog import btnnaz
+
+btn_instr = "⚙️ ИНСТРУКЦИЯ"
+
+
 
 product_cb_2 = CallbackData('product', 'id', 'action')
 
@@ -30,7 +35,6 @@ def product_markup(idx='', price=0):
     markup = InlineKeyboardMarkup()
     markup.add(
         InlineKeyboardButton(f'Заказать за - {price}₽', callback_data=product_cb.new(id=idx, action='add')))
-    markup.add(InlineKeyboardButton(cart, callback_data=product_cb.new(id=idx, action='cart')))
     return markup
 
 
@@ -47,20 +51,17 @@ def categories_markup():
     return markup
 
 
-cart_cb = CallbackData('product', 'action')
-
-
-def cart_markup():
-    global cart_cb
-    markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton(cart, callback_data=cart_cb.new(action='cart')))
+def dyl_markup():
+    markup = ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.add(btn_instr, btnnaz).add(cart)
     return markup
 
 
 @dp.message_handler(IsUser(), text=btndlv)
 async def dyl_start(message: types.Message):
-    await message.answer("Минимальная сумма заказа состовляет 1500 рублей\n"
-                         "ВЫБЕРИТЕ РАЗДЕЛ", reply_markup=categories_markup())
+    await message.answer("Минимальная сумма заказа состовляет 1500 рублей", reply_markup=dyl_markup())
+    await message.answer("ВЫБЕРИТЕ РАЗДЕЛ", reply_markup=categories_markup())
+
 
 
 @dp.callback_query_handler(IsUser(), category_cb.filter(action='view'))
@@ -80,7 +81,7 @@ async def add_product_callback_handler(query: types.CallbackQuery, callback_data
 
     await query.answer('Товар добавлен в корзину!')
     #await query.message.edit_reply_markup(reply_markup=product_markup_2(callback_data['id'], 1))
-    # await query.message.delete()
+    await query.message.delete()
 
 
 async def show_products(m, products):

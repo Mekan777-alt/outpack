@@ -12,6 +12,7 @@ from aiogram.types import ReplyKeyboardMarkup, ReplyKeyboardRemove, ContentType,
 """ADD PRODUCTS"""
 cancel_message = '🚫 Отменить'
 back_message = '👈 Назад'
+back = '👈 Назад'
 all_right_message = '✅ Все верно'
 confirm_message = '✅ Подтвердить заказ'
 
@@ -124,6 +125,13 @@ async def delete_category_handler(message: types.Message, state: FSMContext):
             await process_settings(message)
 
 """add product"""
+
+
+@dp.message_handler(IsAdmin(), text=back)
+async def vack_menu(message: types.Message):
+    markup = ReplyKeyboardRemove()
+    await message.answer("Переход на настройки категории", reply_markup=markup)
+    await process_settings(message)
 
 
 class ProductState(StatesGroup):
@@ -291,8 +299,9 @@ async def show_products(m, products, category_idx):
                              caption=text,
                              reply_markup=markup)
 
-    markup = ReplyKeyboardMarkup()
+    markup = ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add(add_product)
     markup.add(delete_category)
+    markup.add(back)
 
     await m.answer('Хотите что-нибудь добавить или удалить?', reply_markup=markup)

@@ -2,14 +2,13 @@ import json
 from datetime import timedelta, date, datetime
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import StatesGroup, State
-from config import dp, bot
+from config import dp, bot, BRON_CHANNEL
 from aiogram import types
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ContentType
 from filters import IsUser
 from app import btnBrn, btnMenu, btnbar, btnTime, btndlv, cart
 from aiogram.types import ContentType
 
-BRON_CHANNEL = "@main_channel2"
 b51 = KeyboardButton("❌ НЕТ")
 b52 = KeyboardButton("✅ ВЕРНО")
 btn_done = "✅ ВЕРНО"
@@ -148,12 +147,16 @@ async def load_phone_number(message: types.Message, state: FSMContext):
             await message.reply(f"Отлично!\n"
                                 f"Будем ждать, {data['time']} в {data['people']}\n"
                                 f"на имя {data['name']}", reply_markup=otmBtn)
-        elif message.contact is None:
-            data['phone_number'] = message.text
-            await FSMbron.next()
-            await message.reply(f"Отлично!\n"
-                                f"Будем ждать, {data['time']} в {data['people']}\n"
-                                f"на имя {data['name']}", reply_markup=otmBtn)
+
+
+@dp.message_handler(IsUser(), state=FSMbron.phone_number)
+async def procces_phone(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['phone_number'] = message.text
+        await FSMbron.next()
+        await message.reply(f"Отлично!\n"
+                            f"Будем ждать, {data['time']} в {data['people']}\n"
+                            f"на имя {data['name']}", reply_markup=otmBtn)
 
 
 @dp.message_handler(IsUser(), text=btn_done)
@@ -175,6 +178,6 @@ async def cencel_message(message: types.Message, state: FSMContext):
 @dp.message_handler(IsUser(), text=btn_tm)
 async def otm(message: types.Message, state: FSMContext):
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.row(btnMenu, btnbar, btnTime).add(btnBrn, cart, btndlv)
+    markup.row(btnMenu, btnbar, btnTime).add(btnBrn, btndlv)
     await bot.send_message(message.from_user.id, "Бронь отменена", reply_markup=markup)
     await state.finish()

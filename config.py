@@ -4,8 +4,10 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from data.database import Database
 
 loop = asyncio.get_event_loop()
-ADMINS = []#[337708421]#, 664265553]
-TOKEN = "5333099893:AAEuHBJ3W5iq4X4oth-EyFfjpa8TM-iaKBo"
+ADMINS = []#[5443287345]#[337708421]
+TOKEN = "5153177753:AAGN27mmyBzn_nDbc3Wqx7TJwYIG2UQdBMs"
+TOKEN_PAYMENTS = "401643678:TEST:2a495ef0-26a1-4053-b3d5-c149e1f682ce"
+BRON_CHANNEL = "@main_test12"
 storage = MemoryStorage()
 bot = Bot(token=TOKEN, parse_mode=types.ParseMode.HTML)
 dp = Dispatcher(bot, storage=storage, loop=loop)

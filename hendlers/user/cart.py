@@ -5,32 +5,32 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import Message, ChatActions, ReplyKeyboardMarkup, CallbackQuery, ReplyKeyboardRemove, \
     InlineKeyboardMarkup, InlineKeyboardButton, KeyboardButton, ContentType
 from app import cart, btnbar, btnMenu, btnTime, btnBrn, btndlv
-from config import dp, db, bot
+from config import dp, db, bot, BRON_CHANNEL, TOKEN_PAYMENTS
 from filters import IsUser
 from hendlers.admin.add import check_markup, back_message, all_right_message, back_markup, confirm_markup, \
     confirm_message
 from hendlers.user.dostavka import product_markup_2, product_cb, product_cb_2
 
-BRON_CHANNEL = "@main_channel2"
 
 b54 = KeyboardButton("📞 Отправить свой номер", request_contact=True)
 send_phone = ReplyKeyboardMarkup(resize_keyboard=True).add(b54)
 
-TOKEN_PAYMENTS = "401643678:TEST:e7a64b6e-7d82-40ab-bf92-a4c121bcb3ac"
+dostavka = "🎒 ДОСТАВКА"
+samovyvoz = "🚗 САМОВЫВОЗ"
 
 
-@dp.callback_query_handler(IsUser(), product_cb.filter(action='cart'))
-async def process_cart(call: types.CallbackQuery, state: FSMContext):
+@dp.message_handler(IsUser(), text=cart)
+async def process_cart(message: types.Message, state: FSMContext):
     cart_data = db.fetchall(
-        'SELECT * FROM cart WHERE cid=?', (call.message.chat.id,))
+        'SELECT * FROM cart WHERE cid=?', (message.chat.id,))
 
     if len(cart_data) == 0:
 
-        await call.message.answer('Ваша корзина пуста.')
+        await message.answer('Ваша корзина пуста.')
 
     else:
 
-        await bot.send_chat_action(call.message.chat.id, ChatActions.TYPING)
+        await bot.send_chat_action(message.chat.id, ChatActions.TYPING)
         async with state.proxy() as data:
             data['products'] = {}
 
@@ -54,17 +54,17 @@ async def process_cart(call: types.CallbackQuery, state: FSMContext):
                 markup = product_markup_2(idx, count_in_cart)
                 text = f'<b>{title}</b>\n\n\nЦена: {price}₽.'
 
-                await call.message.answer_photo(photo=image,
-                                                caption=text,
-                                                reply_markup=markup)
+                await message.answer_photo(photo=image,
+                                           caption=text,
+                                           reply_markup=markup)
 
         if order_cost != 0:
             markup = ReplyKeyboardMarkup(resize_keyboard=True, selective=True)
             markup.add('📦 Оформить заказ').add("🗑 Очистить корзину")
 
-            await call.message.answer('Отличный выбор, теперь эти блюда в корзине.\n'
-                                      'Нажми на кнопки перейти к оформлению или назад',
-                                      reply_markup=markup)
+            await message.answer('Отличный выбор, теперь эти блюда в корзине.\n'
+                                 'Нажми на кнопки перейти к оформлению или назад',
+                                 reply_markup=markup)
 
 
 @dp.callback_query_handler(IsUser(), product_cb_2.filter(action='count'))
@@ -80,7 +80,7 @@ async def product_callback_handler(query: CallbackQuery, callback_data: dict, st
 
             if 'products' not in data.keys():
 
-                await process_cart(query, state)
+                await process_cart(query.message, state)
 
             else:
 
@@ -92,7 +92,7 @@ async def product_callback_handler(query: CallbackQuery, callback_data: dict, st
 
             if 'products' not in data.keys():
 
-                await process_cart(query, state)
+                await process_cart(query.message, state)
 
             else:
 
@@ -116,6 +116,7 @@ async def product_callback_handler(query: CallbackQuery, callback_data: dict, st
 
 class CheckoutState(StatesGroup):
     check_cart = State()
+    dylevery = State()
     name = State()
     address = State()
     phone_number = State()
@@ -140,7 +141,7 @@ MESSAGE = {
 async def delete_cart(message: types.Message):
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
     markup.row(btnMenu, btnbar, btnTime).add(btnBrn, btndlv)
-    db.query("""DELETE FROM cart;""")
+    db.query("""DELETE FROM cart WHERE cid=?""", (message.chat.id,))
     await message.answer("Готово", reply_markup=markup)
 
 
@@ -186,16 +187,44 @@ async def process_check_cart_invalid(message: Message):
 
 
 @dp.message_handler(IsUser(), text=back_message, state=CheckoutState.check_cart)
-async def process_check_cart_back(message: Message, state: FSMContext):
+async def process_check_cart_back(message: types.Message, state: FSMContext):
     await state.finish()
     await process_cart(message, state)
 
 
 @dp.message_handler(IsUser(), text=all_right_message, state=CheckoutState.check_cart)
-async def process_check_cart_all_right(message: Message, state: FSMContext):
+async def chek_dyl(message: types.Message, state: FSMContext):
+    markup = ReplyKeyboardMarkup()
+    markup.add(dostavka, samovyvoz)
     await CheckoutState.next()
-    await message.answer('Укажите свое имя.',
-                         reply_markup=back_markup())
+    await message.answer("Как будете забирать заказ", reply_markup=markup)
+
+
+@dp.message_handler(IsUser(), text=dostavka, state=CheckoutState.dylevery)
+async def dylevery(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['dylevery'] = message.text
+        await CheckoutState.next()
+        await message.answer('Укажите свое имя.',
+                             reply_markup=back_markup())
+        # await confirm(message, state)
+
+
+@dp.message_handler(IsUser(), text=samovyvoz, state=CheckoutState.dylevery)
+async def dylevery(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['dylevery'] = message.text
+        await CheckoutState.next()
+        await message.answer('Укажите свое имя.',
+                             reply_markup=back_markup())
+        # await confirm(message, state)
+
+
+# @dp.message_handler(IsUser(), text=all_right_message, state=CheckoutState.check_cart)
+# async def process_check_cart_all_right(message: Message, state: FSMContext):
+#     await CheckoutState.next()
+#     await message.answer('Укажите свое имя.',
+#                          reply_markup=back_markup())
 
 
 @dp.message_handler(IsUser(), text=back_message, state=CheckoutState.name)
@@ -212,11 +241,10 @@ async def process_name(message: Message, state: FSMContext):
 
         if 'address' in data.keys():
 
-            await confirm(message)
+            await confirm(message, state)
             await CheckoutState.confirm.set()
 
         else:
-
             await CheckoutState.next()
             await message.answer('Укажите свой адрес места жительства.',
                                  reply_markup=back_markup())
@@ -242,25 +270,40 @@ async def process_address(message: Message, state: FSMContext):
                              "Исключительно в деловых целях 🙂", reply_markup=send_phone)
 
 
-@dp.message_handler(state=CheckoutState.phone_number)
+@dp.message_handler(IsUser(), state=CheckoutState.phone_number)
 async def process_phone_number(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['phone_number'] = message.text
+        await confirm(message, state)
         await CheckoutState.next()
-        await confirm(message)
 
 
-@dp.message_handler(content_types=ContentType.CONTACT, state=CheckoutState.phone_number)
+@dp.message_handler(IsUser(), content_types=ContentType.CONTACT, state=CheckoutState.phone_number)
 async def phone_number(message: Message, state: FSMContext):
     async with state.proxy() as data:
-        data['phone_number'] = message.contact["phone_number"]
+        data['phone_number'] = message.contact['phone_number']
         await CheckoutState.next()
-        await confirm(message)
+        await confirm(message, state)
 
 
-async def confirm(message):
-    await message.answer('Убедитесь, что все правильно оформлено и подтвердите заказ.',
-                         reply_markup=confirm_markup())
+async def confirm(message, state: FSMContext):
+    async with state.proxy() as data:
+        print(data)
+        total_price = 0
+        an = ''
+        for title, price, count_in_cart in data['products'].values():
+            tp = count_in_cart * price
+            an += f'<b>{title}</b> - {count_in_cart}шт\n'
+            total_price += tp
+        await message.answer(f"Убедитесь, что все правильно оформлено и подтвердите заказ.\n"
+                             f"Данные заказа:\n"
+                             f"Получатель: {data['name']}\n"
+                             # f"Номер телефона получателя {data['phone_number']}\n"
+                             f"Общая стоимость {total_price} рублей\n"
+                             f"\n"
+                             f"Ваш заказ:\n"
+                             f"{an}",
+                             reply_markup=confirm_markup())
 
 
 @dp.message_handler(IsUser(), lambda message: message.text not in [confirm_message, back_message],
@@ -287,7 +330,6 @@ async def process_confirm(message: Message, state: FSMContext):
         for title, price, count_in_cart in data['products'].values():
             tp = count_in_cart * price
             total_price += tp
-
         total_price *= 100
         PRICE = types.LabeledPrice(label=MESSAGE['label'][0], amount=total_price)
         await bot.send_invoice(message.chat.id,
@@ -326,15 +368,17 @@ async def process_successful_payment(message: types.Message, state: FSMContext):
         MESSAGE['successful_payments'],
         reply_markup=markup)
     async with state.proxy() as data:
+        count = 0
         total_price = 0
         an = ''
         for title, price, count_in_cart in data['products'].values():
             tp = count_in_cart * price
-            an += f'<b>{title}</b> - {count_in_cart}шт = {price}рублей\n'
+            an += f'<b>{title}</b> - {count_in_cart}шт = {tp}рублей\n'
             total_price += tp
+            count += 1
         now = datetime.now()
 
-        await bot.send_message(BRON_CHANNEL, f"Доставка №1\n"
+        await bot.send_message(BRON_CHANNEL, f"Доставка №{count}\n"
                                              f"\n"
                                              f"Имя получателя: {data['name']}\n"
                                              f"Время: {now.hour}:{now.minute}\n"
@@ -343,9 +387,10 @@ async def process_successful_payment(message: types.Message, state: FSMContext):
                                              f"\n"
                                              f"Блюдо: \n"
                                              f"{an}\n"
+                                             f"Способ получения: {data['dylevery']}\n"
                                              f"Общая стоимость: {total_price} рублей\n"
                                              f"Номер телефона: {data['phone_number']}:")
-        db.query("""DELETE FROM cart;""")
+        db.query("""DELETE FROM cart WHERE cid=?""", (message.chat.id,))
     await state.finish()
 
 # def product_markup_2(idx='', price=0):
