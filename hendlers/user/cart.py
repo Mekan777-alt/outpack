@@ -231,10 +231,15 @@ async def process_name(message: Message, state: FSMContext):
 
 @dp.message_handler(IsUser(), text=back_message, state=CheckoutState.confirm)
 async def process_confirm(message: Message, state: FSMContext):
-    await CheckoutState.address.set()
     async with state.proxy() as data:
-        await message.answer('Изменить адрес с <b>' + data['address'] + '</b>?',
-                             reply_markup=back_markup())
+        if data['dylevery'] == dostavka:
+            await CheckoutState.address.set()
+            await message.answer('Изменить адрес с <b>' + data['address'] + '</b>?',
+                                reply_markup=back_markup())
+        else:
+            await CheckoutState.name.set()
+            await message.answer('Изменить имя с <b>' + data['name'] + '</b>?',
+                                 reply_markup=back_markup())
 
 
 @dp.message_handler(IsUser(), state=CheckoutState.address)
@@ -248,12 +253,12 @@ async def process_address(message: Message, state: FSMContext):
                              "Исключительно в деловых целях 🙂", reply_markup=send_phone)
 
 
-@dp.message_handler(IsUser(), text=back_message, state=CheckoutState.phone_number)
-async def check_phone(message: types.Message, state: FSMContext):
-    async with state.proxy() as data:
-        await message.answer('Изменить номер телефона с <b>' + data['phone_number'] + '</b>',
-                             reply_markup=back_markup())
-    await CheckoutState.phone_number.set()
+# @dp.message_handler(IsUser(), text=back_message, state=CheckoutState.confirm)
+# async def check_phone(message: types.Message, state: FSMContext):
+#     async with state.proxy() as data:
+#         await message.answer('Изменить номер телефона с <b>' + data['phone_number'] + '</b>',
+#                              reply_markup=back_markup())
+#     await CheckoutState.phone_number.set()
 
 
 @dp.message_handler(IsUser(), state=CheckoutState.phone_number)
