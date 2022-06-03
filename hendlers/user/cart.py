@@ -22,41 +22,27 @@ samovyvoz = "🚗 САМОВЫВОЗ"
 async def process_cart(message: types.Message, state: FSMContext):
     cart_data = db.fetchall(
         'SELECT * FROM cart WHERE cid=?', (message.chat.id,))
-
     if len(cart_data) == 0:
-
         await message.answer('Ваша корзина пуста.')
-
     else:
-
         await bot.send_chat_action(message.chat.id, ChatActions.TYPING)
         async with state.proxy() as data:
             data['products'] = {}
-
         order_cost = 0
-
         for _, idx, count_in_cart in cart_data:
-
             product = db.fetchone('SELECT * FROM products WHERE idx=?', (idx,))
-
             if product is None:
-
                 db.query('DELETE FROM cart WHERE idx=?', (idx,))
-
             else:
                 _, title, body, image, price, _ = product
                 order_cost += price
-
                 async with state.proxy() as data:
                     data['products'][idx] = [title, price, count_in_cart]
-
                 markup = product_markup_2(idx, count_in_cart)
                 text = f'<b>{title}</b>\n\n\nЦена: {price}₽.'
-
                 await message.answer_photo(photo=image,
                                            caption=text,
                                            reply_markup=markup)
-
         if order_cost != 0:
             markup = ReplyKeyboardMarkup(resize_keyboard=True, selective=True)
             markup.add('📦 Оформить заказ').add("🗑 Очистить корзину")
@@ -72,44 +58,27 @@ async def process_cart(message: types.Message, state: FSMContext):
 async def product_callback_handler(query: CallbackQuery, callback_data: dict, state: FSMContext):
     idx = callback_data['id']
     action = callback_data['action']
-
     if 'count' == action:
-
         async with state.proxy() as data:
-
             if 'products' not in data.keys():
-
                 await process_cart(query.message, state)
-
             else:
-
                 await query.answer('Количество - ' + data['products'][idx][2])
-
     else:
-
         async with state.proxy() as data:
-
             if 'products' not in data.keys():
-
                 await process_cart(query.message, state)
-
             else:
-
                 data['products'][idx][2] += 1 if 'increase' == action else -1
                 count_in_cart = data['products'][idx][2]
-
                 if count_in_cart == 0:
-
                     db.query('''DELETE FROM cart
                     WHERE cid = ? AND idx = ?''', (query.message.chat.id, idx))
-
                     await query.message.delete()
                 else:
-
                     db.query('''UPDATE cart
                     SET quantity = ?
                     WHERE cid = ? AND idx = ?''', (count_in_cart, query.message.chat.id, idx))
-
                     await query.message.edit_reply_markup(product_markup_2(idx, count_in_cart))
 
 
@@ -423,48 +392,3 @@ async def process_successful_payment(message: types.Message, state: FSMContext):
             db.query("""DELETE FROM cart WHERE cid=?""", (message.chat.id,))
 
     await state.finish()
-
-# def product_markup_2(idx='', price=0):
-#     global product_cb
-#
-#     markup = InlineKeyboardMarkup()
-#     markup.add(
-#         InlineKeyboardButton(f'Добавить в корзину - {price}₽', callback_data=product_cb.new(id=idx, action='add')))
-#
-#     return markup
-
-
-# @dp.message_handler(IsUser(), lambda message: message.text != cart)
-# async def message(message: types.Message):
-#     idx = db.fetchone("""SELECT idx FROM categories WHERE categories.title=?""",
-#                       (message.text,))
-#     int_tuple = ''.join(str(x) for x in idx)
-#     products = db.fetchall('''SELECT * FROM products product
-#     WHERE product.tag = (SELECT title FROM categories WHERE idx=?)''',
-#                            (int_tuple,))
-#
-#     # await message.answer('Все доступные товары.')
-#     if len(products) == 0:
-#         await message.answer('Здесь ничего нет 😢')
-#
-#     else:
-#
-#         for idx, title, body, image, price, _ in products:
-#             markup = product_markup_2(idx, price)
-#             text = f'<b>{title}</b>\n\n{body}'
-#
-#             await message.answer_photo(photo=image,
-#                                        caption=text,
-#                                        reply_markup=markup)
-#
-#
-# @dp.callback_query_handler(IsUser(), product_cb.filter(action='add'))
-# async def add_product_callback_handler(query: types.CallbackQuery, callback_data: dict):
-#     db.query('INSERT INTO cart VALUES (?, ?, 1)',
-#              (query.message.chat.id, callback_data['id']))
-#     await query.answer('Товар добавлен в корзину!')
-#     # await query.message.delete()
-
-# @dp.message_handler(IsUser(), text=balance)
-# async def process_balance(message: Message, state: FSMContext):
-#     await message.answer('Ваш кошелек пуст! Чтобы его пополнить нужно...')

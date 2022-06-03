@@ -63,7 +63,6 @@ async def dyl_start(message: types.Message):
     await message.answer("ВЫБЕРИТЕ РАЗДЕЛ", reply_markup=categories_markup())
 
 
-
 @dp.callback_query_handler(IsUser(), category_cb.filter(action='view'))
 async def category_callback_handler(query: types.CallbackQuery, callback_data: dict):
     products = db.fetchall('''SELECT * FROM products
