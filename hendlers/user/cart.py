@@ -163,9 +163,14 @@ async def process_check_cart_back(message: types.Message, state: FSMContext):
 @dp.message_handler(IsUser(), text=all_right_message, state=CheckoutState.check_cart)
 async def chek_dyl(message: types.Message, state: FSMContext):
     markup = ReplyKeyboardMarkup()
-    markup.add(dostavka, samovyvoz)
+    markup.add(dostavka, samovyvoz).add(back_message)
     await CheckoutState.next()
     await message.answer("Как будете забирать заказ", reply_markup=markup)
+
+
+@dp.message_handler(IsUser(), text=back_message, state=CheckoutState.dylevery)
+async def process_check_cart_back(message: types.Message, state: FSMContext):
+    await process_checkout(message, state)
 
 
 @dp.message_handler(IsUser(), text=dostavka, state=CheckoutState.dylevery)
@@ -188,11 +193,13 @@ async def dylevery(message: types.Message, state: FSMContext):
         # await confirm(message, state)
 
 
-# @dp.message_handler(IsUser(), text=all_right_message, state=CheckoutState.check_cart)
-# async def process_check_cart_all_right(message: Message, state: FSMContext):
-#     await CheckoutState.next()
-#     await message.answer('Укажите свое имя.',
-#                          reply_markup=back_markup())
+@dp.message_handler(IsUser(), text=back_message, state=CheckoutState.address)
+async def process_address_back(message: Message, state: FSMContext):
+    async with state.proxy() as data:
+        await message.answer('Изменить имя с <b>' + data['name'] + '</b>?',
+                             reply_markup=back_markup())
+
+    await CheckoutState.name.set()
 
 
 @dp.message_handler(IsUser(), text=back_message, state=CheckoutState.name)
@@ -222,13 +229,12 @@ async def process_name(message: Message, state: FSMContext):
                                  reply_markup=back_markup())
 
 
-@dp.message_handler(IsUser(), text=back_message, state=CheckoutState.address)
-async def process_address_back(message: Message, state: FSMContext):
+@dp.message_handler(IsUser(), text=back_message, state=CheckoutState.confirm)
+async def process_confirm(message: Message, state: FSMContext):
+    await CheckoutState.address.set()
     async with state.proxy() as data:
-        await message.answer('Изменить имя с <b>' + data['name'] + '</b>?',
+        await message.answer('Изменить адрес с <b>' + data['address'] + '</b>?',
                              reply_markup=back_markup())
-
-    await CheckoutState.name.set()
 
 
 @dp.message_handler(IsUser(), state=CheckoutState.address)
@@ -240,6 +246,14 @@ async def process_address(message: Message, state: FSMContext):
         await CheckoutState.next()
         await message.answer("Так, теперь мне нужен твой номер телефона.\n"
                              "Исключительно в деловых целях 🙂", reply_markup=send_phone)
+
+
+@dp.message_handler(IsUser(), text=back_message, state=CheckoutState.phone_number)
+async def check_phone(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        await message.answer('Изменить номер телефона с <b>' + data['phone_number'] + '</b>',
+                             reply_markup=back_markup())
+    await CheckoutState.phone_number.set()
 
 
 @dp.message_handler(IsUser(), state=CheckoutState.phone_number)
@@ -298,15 +312,6 @@ async def confirm(message, state):
                     state=CheckoutState.confirm)
 async def process_confirm_invalid(message: Message):
     await message.reply('Такого варианта не было.')
-
-
-@dp.message_handler(IsUser(), text=back_message, state=CheckoutState.confirm)
-async def process_confirm(message: Message, state: FSMContext):
-    await CheckoutState.address.set()
-
-    async with state.proxy() as data:
-        await message.answer('Изменить адрес с <b>' + data['address'] + '</b>?',
-                             reply_markup=back_markup())
 
 
 @dp.message_handler(IsUser(), text=confirm_message, state=CheckoutState.confirm)
