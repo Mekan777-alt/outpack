@@ -39,11 +39,11 @@ async def catalog(message: types.Message):
 """handler menu"""
 
 
-# @dp.message_handler(IsUser(), text=btnkitchen)
-# async def btn_kitchen(message: types.Message):
-#     markup = ReplyKeyboardMarkup(resize_keyboard=True)
-#     markup.row(btnkitchen, btnbzn, btngril).add(btngor, btnsup, btnkids).add(btnsous, btndes, btnnaz)
-#     await message.answer("https://telegra.ph/Menyu-04-20-2", reply_markup=markup)
+@dp.message_handler(IsUser(), text=btnkitchen)
+async def btn_kitchen(message: types.Message):
+    markup = ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.row(btnkitchen, btnbzn, btngril).add(btngor, btnsup, btnkids).add(btnsous, btndes, btnnaz)
+    await message.answer("https://telegra.ph/Menyu-04-20-2", reply_markup=markup)
 
 
 @dp.message_handler(IsUser(), text=btnbzn)

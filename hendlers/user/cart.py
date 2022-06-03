@@ -120,7 +120,6 @@ class CheckoutState(StatesGroup):
     address = State()
     phone_number = State()
     confirm = State()
-    money = State()
 
 
 successful_payment = '''
@@ -340,15 +339,11 @@ async def process_confirm(message: Message, state: FSMContext):
         await message.answer('Изменить адрес с <b>' + data['address'] + '</b>?',
                              reply_markup=back_markup())
 
-nalicka = '💵 Наличные'
-karta = '💳 Карта'
-
 
 @dp.message_handler(IsUser(), text=confirm_message, state=CheckoutState.confirm)
 async def process_confirm(message: Message, state: FSMContext):
     global MESSAGE
     total_price = 0
-
     async with state.proxy() as data:
         for title, price, count_in_cart in data['products'].values():
             tp = count_in_cart * price
@@ -405,12 +400,12 @@ async def process_successful_payment(message: types.Message, state: FSMContext):
                                              f"Время: {now.hour}:{now.minute}\n"
                                              f"Дата: {now.date().strftime('%d-%m-%y')}\n"
                                              f"Адрес доставки: {data['address']}\n"
-                                             f"\n"
-                                             f"Блюдо: \n"
-                                             f"{an}\n"
                                              f"Способ получения: {data['dylevery']}\n"
                                              f"Общая стоимость: {total_price} рублей\n"
-                                             f"Номер телефона: {data['phone_number']}:")
+                                             f"Номер телефона: {data['phone_number']}\n"
+                                             f"\n"
+                                             f"Блюдо: \n"
+                                             f"{an}")
             db.query("""DELETE FROM cart WHERE cid=?""", (message.chat.id,))
         else:
             await bot.send_message(BRON_CHANNEL, f"Самовывоз \n"

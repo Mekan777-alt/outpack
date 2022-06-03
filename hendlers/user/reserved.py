@@ -108,7 +108,7 @@ async def load_name(message: types.Message, state: FSMContext):
             await message.reply('📅 На какую дату?', reply_markup=date_day())
         else:
             markup = ReplyKeyboardMarkup(resize_keyboard=True)
-            markup.row(btnMenu, btnbar, btnTime).add(btnBrn, cart)
+            markup.row(btnMenu, btnbar, btnTime).add(btnBrn, btndlv)
             await bot.send_message(message.from_user.id, "ПЕРЕХОД НА ГЛАВНОЕ МЕНЮ", reply_markup=markup)
             await state.finish()
 
