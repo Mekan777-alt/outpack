@@ -8,8 +8,8 @@ from app import cart, btnbar, btnMenu, btnTime, btnBrn, btndlv
 from config import dp, db, bot, BRON_CHANNEL, TOKEN_PAYMENTS
 from filters import IsUser
 from hendlers.admin.add import check_markup, back_message, all_right_message, back_markup, confirm_markup, \
-    confirm_message
-from hendlers.user.dostavka import product_markup_2, product_cb, product_cb_2
+    confirm_message, back
+from hendlers.user.dostavka import product_markup_2, product_cb, product_cb_2, dyl_start
 
 b54 = KeyboardButton("📞 Отправить свой номер", request_contact=True)
 send_phone = ReplyKeyboardMarkup(resize_keyboard=True).add(b54)
@@ -45,11 +45,16 @@ async def process_cart(message: types.Message, state: FSMContext):
                                            reply_markup=markup)
         if order_cost != 0:
             markup = ReplyKeyboardMarkup(resize_keyboard=True, selective=True)
-            markup.add('📦 Оформить заказ').add("🗑 Очистить корзину")
+            markup.add('📦 Оформить заказ', "🗑 Очистить корзину").add(back)
 
             await message.answer('Отличный выбор, теперь эти блюда в корзине.\n'
                                  'Нажми на кнопки перейти к оформлению или назад',
                                  reply_markup=markup)
+
+
+@dp.message_handler(IsUser(), text=back)
+async def back_menu(message: types.Message):
+    await dyl_start(message)
 
 
 @dp.callback_query_handler(IsUser(), product_cb_2.filter(action=['count', 'increase', 'decrease']))

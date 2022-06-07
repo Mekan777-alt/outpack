@@ -8,6 +8,33 @@ from hendlers.user.catalog import btnnaz
 
 btn_instr = "⚙️ ИНСТРУКЦИЯ"
 
+kryl_cb = CallbackData('product', 'id', 'action')
+
+
+def kryl(idx):
+    global kryl_cb
+    markup = InlineKeyboardMarkup()
+    medium = InlineKeyboardButton('Средняя острата', callback_data=projarka_cb.new(id=idx, action='sred'))
+    hard = InlineKeyboardButton('Острые', callback_data=projarka_cb.new(id=idx, action='ostr'))
+    markup.add(medium, hard)
+    return markup
+
+
+projarka_cb = CallbackData('product', 'id', 'action')
+
+
+def projacka_markup(idx):
+    global projarka_cb
+
+    markup = InlineKeyboardMarkup()
+    blue = InlineKeyboardButton('Blue rare', callback_data=projarka_cb.new(id=idx, action='blue_rare'))
+    medium_rare = InlineKeyboardButton('Medium rare', callback_data=projarka_cb.new(id=idx, action='medium_rare'))
+    medium = InlineKeyboardButton('Medium', callback_data=projarka_cb.new(id=idx, action='medium'))
+    medium_well = InlineKeyboardButton('Medium well', callback_data=projarka_cb.new(id=idx, action='medium_well'))
+    well_done = InlineKeyboardButton('Well done', callback_data=projarka_cb.new(id=idx, action='well_done'))
+    markup.row(blue, medium_rare, medium)
+    markup.add(medium_well, well_done)
+    return markup
 
 
 product_cb_2 = CallbackData('product', 'id', 'action')
@@ -69,17 +96,35 @@ async def category_callback_handler(query: types.CallbackQuery, callback_data: d
     WHERE products.tag = (SELECT title FROM categories WHERE idx=?)''',
                            (callback_data['id'],))
 
-    await query.answer('Все доступные товары.')
+    # await query.answer('Все доступные товары.')
     await show_products(query.message, products)
 
 
 @dp.callback_query_handler(IsUser(), product_cb.filter(action='add'))
 async def add_product_callback_handler(query: types.CallbackQuery, callback_data: dict):
+    idx = ['d2c4042b83301352cfabe1f2e293e03d', 'd21e31622b1b461aec6692ed93e61e5b',
+           '6c64de44bccc509c2c0c23cd6d2d0a0d', '988f7a785631056fb53022bca062b89d']
+    if callback_data['id'] in idx:
+        await query.message.edit_reply_markup(reply_markup=projacka_markup(callback_data['id']))
+    elif callback_data['id'] in '5f2ae5d354d1d8a4439d0171866c56b7':
+        await query.message.edit_reply_markup(reply_markup=kryl(callback_data['id']))
+    else:
+        db.query('INSERT INTO cart VALUES (?, ?, 1)',
+                (query.message.chat.id, callback_data['id']))
+        await query.answer('Товар добавлен в корзину!')
+
+        await query.message.delete()
+
+
+@dp.callback_query_handler(IsUser(), projarka_cb.filter(action=['sred', 'ostr', 'blue_rare', 'medium_rare', 'medium', 'medium_well', 'well_done']))
+async def projarka(query: types.CallbackQuery, callback_data: dict):
+    db.query('INSERT INTO wallet VALUES (?, ?)',
+             (callback_data['id'], callback_data['action']))
+
     db.query('INSERT INTO cart VALUES (?, ?, 1)',
              (query.message.chat.id, callback_data['id']))
-
     await query.answer('Товар добавлен в корзину!')
-    #await query.message.edit_reply_markup(reply_markup=product_markup_2(callback_data['id'], 1))
+
     await query.message.delete()
 
 
