@@ -187,7 +187,10 @@ async def product_body(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['body'] = message.text
     await ProductState.next()
-    await message.answer("Фото: ", reply_markup=back_markup())
+
+    markup = back_markup()
+    markup.add("Без фото")
+    await message.answer("Фото: ", reply_markup=markup)
 
 
 @dp.message_handler(IsAdmin(), content_types=ContentType.PHOTO, state=ProductState.image)
@@ -205,12 +208,14 @@ async def product_photo(message: types.Message, state: FSMContext):
 async def product_price(message: types.Message, state: FSMContext):
     markup = ReplyKeyboardMarkup(resize_keyboard=True, selective=True)
     markup.add(back_message)
-    if message.text == back_message:
-        await ProductState.body.set()
-        async with state.proxy() as data:
+    async with state.proxy() as data:
+        if message.text == back_message:
+            await ProductState.body.set()
             await message.answer(f"Изменить описание с <b>{data['body']}</b>?", reply_markup=back_markup())
-    else:
-        await message.answer('Вам нужно прислать фото товара.')
+        elif message.text == 'Без фото':
+            data['image'] = None
+            await ProductState.next()
+            await message.answer("Цена: ", reply_markup=back_markup())
 
 
 @dp.message_handler(IsAdmin(), lambda message: not message.text.isdigit(), state=ProductState.price)
@@ -231,13 +236,18 @@ async def process_price(message: types.Message, state: FSMContext):
         data['price'] = message.text
         title = data['title']
         body = data['body']
+        photo = data['image']
         price = data['price']
         await ProductState.next()
         text = f'<b>{title}</b>\n\n{body}\n\nЦена: {price} рублей.'
+
         markup = check_markup()
-        await message.answer_photo(photo=data['image'],
-                                   caption=text,
-                                   reply_markup=markup)
+        if photo:
+            await message.answer_photo(photo=photo,
+                                       caption=text,
+                                       reply_markup=markup)
+        else:
+            await message.answer(text=text, reply_markup=markup)
 
 
 @dp.message_handler(IsAdmin(), lambda message: message.text not in [back_message, all_right_message], state=ProductState.confirm)
@@ -295,9 +305,12 @@ async def show_products(m, products, category_idx):
         markup.add(InlineKeyboardButton(
             '🗑️ Удалить', callback_data=product_cb.new(id=idx, action='delete')))
 
-        await m.answer_photo(photo=image,
-                             caption=text,
-                             reply_markup=markup)
+        if image:
+            await m.answer_photo(photo=image,
+                                 caption=text,
+                                 reply_markup=markup)
+        else:
+            await m.answer(text=text, reply_markup=markup)
 
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add(add_product)

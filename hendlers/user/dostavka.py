@@ -94,7 +94,9 @@ async def show_products(m, products):
         for idx, title, body, image, price, _ in products:
             markup = product_markup(idx, price)
             text = f'<b>{title}</b>\n\n{body}'
-
-            await m.answer_photo(photo=image,
-                                 caption=text,
-                                 reply_markup=markup)
+            if image:
+                await m.answer_photo(photo=image,
+                                     caption=text,
+                                     reply_markup=markup)
+            else:
+                await m.answer(text=text, reply_markup=markup)
