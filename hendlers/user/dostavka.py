@@ -37,6 +37,42 @@ def projacka_markup(idx):
     return markup
 
 
+garniry_cb = CallbackData('product', 'action')
+
+
+def garniry():
+    global garniry_cb
+
+    markup = InlineKeyboardMarkup()
+    kart_pure = InlineKeyboardButton('Картофельное пюре', callback_data=garniry_cb.new(action='pure'))
+    kart_free = InlineKeyboardButton('Картофель фри', callback_data=garniry_cb.new(action='free'))
+    kart_dolki = InlineKeyboardButton('Картофельные дольки', callback_data=garniry_cb.new(action='dolki'))
+    kukuruza = InlineKeyboardButton('Початок кукурузы (150 гр.)', callback_data=garniry_cb.new(action='kuku'))
+    salat = InlineKeyboardButton('Свежий салатик (150 гр.)', callback_data=garniry_cb.new(action='salat'))
+    markup.add(kart_pure, kart_free)
+    markup.add(kart_dolki, kukuruza)
+    markup.add(salat)
+    return markup
+
+
+sous_cb = CallbackData('product', 'action')
+
+
+def sous():
+    global sous_cb
+
+    markup = InlineKeyboardMarkup()
+    blu = InlineKeyboardButton('Соус блю чиз', callback_data=sous_cb.new(action='blu'))
+    nacos = InlineKeyboardButton('Соус начос', callback_data=sous_cb.new(action='nacos'))
+    meksik = InlineKeyboardButton('Соус мексиканская сальса', callback_data=sous_cb.new(action='meks'))
+    bbq = InlineKeyboardButton('Соус BBQ', callback_data=sous_cb.new(action='bbq'))
+    slad = InlineKeyboardButton('Соус сладкий чили', callback_data=sous_cb.new(action='chili'))
+    markup.add(blu, nacos)
+    markup.add(slad, bbq)
+    markup.add(meksik)
+    return markup
+
+
 product_cb_2 = CallbackData('product', 'id', 'action')
 
 
@@ -105,6 +141,7 @@ async def add_product_callback_handler(query: types.CallbackQuery, callback_data
     idx = ['d2c4042b83301352cfabe1f2e293e03d', 'd21e31622b1b461aec6692ed93e61e5b',
            '6c64de44bccc509c2c0c23cd6d2d0a0d', '988f7a785631056fb53022bca062b89d']
     if callback_data['id'] in idx:
+        await query.answer('Выберите прожарку')
         await query.message.edit_reply_markup(reply_markup=projacka_markup(callback_data['id']))
     elif callback_data['id'] in '5f2ae5d354d1d8a4439d0171866c56b7':
         await query.message.edit_reply_markup(reply_markup=kryl(callback_data['id']))
@@ -123,15 +160,24 @@ async def add_product_callback_handler(query: types.CallbackQuery, callback_data
 @dp.callback_query_handler(IsUser(), projarka_cb.filter(action='medium'))
 @dp.callback_query_handler(IsUser(), projarka_cb.filter(action='medium_well'))
 @dp.callback_query_handler(IsUser(), projarka_cb.filter(action='well_done'))
-async def projarka(query: types.CallbackQuery, callback_data: dict):
-    db.query('INSERT INTO wallet VALUES (?, ?)',
-             (callback_data['id'], callback_data['action']))
+async def projarka(query: types.CallbackQuery):
+    await query.answer('Выберите гарнир')
+    await query.message.edit_reply_markup(reply_markup=garniry())
 
-    db.query('INSERT INTO cart VALUES (?, ?, 1)',
-             (query.message.chat.id, callback_data['id']))
-    await query.answer('Товар добавлен в корзину!')
 
-    await query.message.delete()
+@dp.callback_query_handler(IsUser(), garniry_cb.filter(action='pure'))
+@dp.callback_query_handler(IsUser(), garniry_cb.filter(action='free'))
+@dp.callback_query_handler(IsUser(), garniry_cb.filter(action='dolki'))
+@dp.callback_query_handler(IsUser(), garniry_cb.filter(action='kuku'))
+@dp.callback_query_handler(IsUser(), garniry_cb.filter(action='salat'))
+async def garniry(query: types.CallbackQuery):
+    await query.answer('Выберите соус')
+    await query.message.edit_reply_markup(reply_markup=sous())
+    # db.query('INSERT INTO cart VALUES (?, ?, 1)',
+    #          (query.message.chat.id, callback_data['id']))
+    # await query.answer('Товар добавлен в корзину!')
+
+#await query.message.delete()
 
 
 async def show_products(m, products):
