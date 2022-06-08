@@ -12,7 +12,7 @@ BRON_CHANNEL = "@main_test12"
 storage = MemoryStorage()
 bot = Bot(token=TOKEN, parse_mode=types.ParseMode.HTML)
 dp = Dispatcher(bot, storage=storage, loop=loop)
-db = Database(os.getcwd() + "\\data\\database.db")
+db = Database("/Users/mekanmededov/Desktop/outpack_telebot/data/database.db")
 
 try:
     from local_config import *
