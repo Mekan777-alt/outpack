@@ -1,0 +1,7 @@
+.idea
+venv
+local_config.py
+.DS_Store
+data/database.db
+pycache
+*.pyc

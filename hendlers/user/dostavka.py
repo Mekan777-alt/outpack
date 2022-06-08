@@ -153,6 +153,7 @@ async def add_product_callback_handler(query: types.CallbackQuery, callback_data
         await query.message.delete()
 
 
+<<<<<<< HEAD
 @dp.callback_query_handler(IsUser(), projarka_cb.filter(action='sred'))
 @dp.callback_query_handler(IsUser(), projarka_cb.filter(action='ostr'))
 @dp.callback_query_handler(IsUser(), projarka_cb.filter(action='blue_rare'))
@@ -178,6 +179,18 @@ async def garniry(query: types.CallbackQuery):
     # await query.answer('Товар добавлен в корзину!')
 
 #await query.message.delete()
+=======
+@dp.callback_query_handler(IsUser(), projarka_cb.filter(action=['sred', 'ostr', 'blue_rare', 'medium_rare', 'medium', 'medium_well', 'well_done']))
+async def projarka(query: types.CallbackQuery, callback_data: dict):
+    db.query('INSERT INTO wallet VALUES (?, ?)',
+             (callback_data['id'], callback_data['action']))
+
+    db.query('INSERT INTO cart VALUES (?, ?, 1)',
+             (query.message.chat.id, callback_data['id']))
+    await query.answer('Товар добавлен в корзину!')
+
+    await query.message.delete()
+>>>>>>> de025d9a0dff074093470744b7e4db64c4f63a70
 
 
 async def show_products(m, products):
@@ -191,7 +204,9 @@ async def show_products(m, products):
         for idx, title, body, image, price, _ in products:
             markup = product_markup(idx, price)
             text = f'<b>{title}</b>\n\n{body}'
-
-            await m.answer_photo(photo=image,
-                                 caption=text,
-                                 reply_markup=markup)
+            if image:
+                await m.answer_photo(photo=image,
+                                     caption=text,
+                                     reply_markup=markup)
+            else:
+                await m.answer(text=text, reply_markup=markup)

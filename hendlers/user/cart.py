@@ -57,9 +57,7 @@ async def back_menu(message: types.Message):
     await dyl_start(message)
 
 
-@dp.callback_query_handler(IsUser(), product_cb_2.filter(action='count'))
-@dp.callback_query_handler(IsUser(), product_cb_2.filter(action='increase'))
-@dp.callback_query_handler(IsUser(), product_cb_2.filter(action='decrease'))
+@dp.callback_query_handler(IsUser(), product_cb_2.filter(action=['count', 'increase', 'decrease']))
 async def product_callback_handler(query: CallbackQuery, callback_data: dict, state: FSMContext):
     idx = callback_data['id']
     action = callback_data['action']
@@ -68,7 +66,7 @@ async def product_callback_handler(query: CallbackQuery, callback_data: dict, st
             if 'products' not in data.keys():
                 await process_cart(query.message, state)
             else:
-                await query.answer('Количество - ' + data['products'][idx][2])
+                await query.answer(f'Количество - {data["products"][idx][2]}')
     else:
         async with state.proxy() as data:
             if 'products' not in data.keys():
