@@ -18,7 +18,6 @@ send_phone = ReplyKeyboardMarkup(resize_keyboard=True).add(b54)
 dostavka = "🎒 ДОСТАВКА"
 samovyvoz = "🚗 САМОВЫВОЗ"
 
-
 product_cb_2 = CallbackData('product', 'id', 'action')
 
 
@@ -213,7 +212,7 @@ async def process_check_cart_back(message: types.Message, state: FSMContext):
 
 @dp.message_handler(IsUser(), text=all_right_message, state=CheckoutState.check_cart)
 async def chek_dyl(message: types.Message, state: FSMContext):
-    markup = ReplyKeyboardMarkup()
+    markup = ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add(dostavka, samovyvoz).add(back_message)
     await CheckoutState.next()
     await message.answer("Как будете забирать заказ", reply_markup=markup)
@@ -286,7 +285,7 @@ async def process_confirm(message: Message, state: FSMContext):
         if data['dylevery'] == dostavka:
             await CheckoutState.address.set()
             await message.answer('Изменить адрес с <b>' + data['address'] + '</b>?',
-                                reply_markup=back_markup())
+                                 reply_markup=back_markup())
         else:
             await CheckoutState.name.set()
             await message.answer('Изменить имя с <b>' + data['name'] + '</b>?',
@@ -340,7 +339,7 @@ async def confirm(message, state):
             await message.answer(f"Убедитесь, что все правильно оформлено и подтвердите заказ.\n"
                                  f"Данные заказа:\n"
                                  f"Получатель: {data['name']}\n"
-                                 #f"Номер телефона получателя {data['phone_number']}\n"
+                                 # f"Номер телефона получателя {data['phone_number']}\n"
                                  f"Общая стоимость {total_price} рублей\n"
                                  f"\n"
                                  f"Ваш заказ:\n"
@@ -424,8 +423,11 @@ async def process_successful_payment(message: types.Message, state: FSMContext):
             total_price += tp
         now = datetime.now()
         if data['dylevery'] == dostavka:
-            await bot.send_message(BRON_CHANNEL, f"Доставка\n"
-                                             f"\n"
+            variant = "Доставка"
+        else:
+            variant = "Самовывоз"
+
+        await bot.send_message(BRON_CHANNEL, f"{variant}\n\n"
                                              f"Имя получателя: {data['name']}\n"
                                              f"Время: {now.hour}:{now.minute}\n"
                                              f"Дата: {now.date().strftime('%d-%m-%y')}\n"
@@ -436,20 +438,6 @@ async def process_successful_payment(message: types.Message, state: FSMContext):
                                              f"\n"
                                              f"Блюдо: \n"
                                              f"{an}")
-            db.query("""DELETE FROM cart WHERE cid=?""", (message.chat.id,))
-        else:
-            await bot.send_message(BRON_CHANNEL, f"Самовывоз \n"
-                                                 f"\n"
-                                                 f"Имя получателя: {data['name']}\n"
-                                                 f"Время: {now.hour}:{now.minute}\n"
-                                                 f"Дата: {now.date().strftime('%d-%m-%y')}\n"
-                                                 f"Способ получения: {data['dylevery']}\n"
-                                                 f"Общая стоимость: {total_price} рублей\n"
-                                                 f"Номер телефона: {data['phone_number']}\n"
-                                                 f"Перезвонить для уточнения к какому времени должен быть готов заказ\n"
-                                                 f"\n"
-                                                 f"Блюдо: \n"
-                                                 f"{an}\n")
-            db.query("""DELETE FROM cart WHERE cid=?""", (message.chat.id,))
+        db.query("""DELETE FROM cart WHERE cid=?""", (message.chat.id,))
 
     await state.finish()

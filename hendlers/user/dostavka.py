@@ -10,7 +10,7 @@ from aiogram.dispatcher import FSMContext
 
 btn_instr = "⚙️ ИНСТРУКЦИЯ"
 
-projarkas = {"blue_rare": "Соус блю чиз", "medium_rare": "Medium rare", "medium": "Medium", "medium_well": "Medium well", "well_done": "Well done"}
+projarkas = {"blue_rare": "Blue rare", "medium_rare": "Medium rare", "medium": "Medium", "medium_well": "Medium well", "well_done": "Well done"}
 garnishs = {"pure": "Картофельное пюре", "free": "Картофель фри", "dolki": "Картофельные дольки", "kuku": "Початок кукурузы (150 гр.)", "salat": "Свежий салатик (150 гр.)"}
 sauces = {"blu": "Соус блю чиз", "nacos": "Соус начос", "meks": "Соус мексиканская сальса", "bbq": "Соус BBQ", "chili": "Соус сладкий чили"}
 
@@ -49,7 +49,7 @@ def amount_markup(idx):
 projarka_cb = CallbackData('product', 'id', 'action')
 
 
-def projacka_markup(idx):
+def projarka_markup(idx):
     global projarka_cb
 
     markup = InlineKeyboardMarkup(row_width=3)
@@ -157,7 +157,7 @@ async def add_product_callback_handler(query: types.CallbackQuery, callback_data
             await WingsAddingsState.spice.set()
         else:
             msg = 'Выберите прожарку'
-            markup = projacka_markup(product_id)
+            markup = projarka_markup(product_id)
             await SteakAddingsState.projarka.set()
 
         await query.answer(msg)
