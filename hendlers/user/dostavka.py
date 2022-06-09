@@ -22,7 +22,7 @@ class AddingsState(StatesGroup):
 def kryl(idx):
     global kryl_cb
     markup = InlineKeyboardMarkup()
-    medium = InlineKeyboardButton('Средняя острата', callback_data=projarka_cb.new(id=idx, action='sred'))
+    medium = InlineKeyboardButton('Средняя острота', callback_data=projarka_cb.new(id=idx, action='sred'))
     hard = InlineKeyboardButton('Острые', callback_data=projarka_cb.new(id=idx, action='ostr'))
     markup.add(medium, hard)
     return markup
@@ -161,7 +161,7 @@ async def add_product_callback_handler(query: types.CallbackQuery, callback_data
     elif product_id in '5f2ae5d354d1d8a4439d0171866c56b7':
         await query.message.edit_reply_markup(reply_markup=kryl(product_id))
     else:
-        db.query('INSERT INTO cart VALUES (?, ?, 1)',
+        db.query('INSERT INTO cart VALUES (?, ?, 1, null, null, null)',
                 (query.message.chat.id, product_id))
         await query.answer('Товар добавлен в корзину!')
 
