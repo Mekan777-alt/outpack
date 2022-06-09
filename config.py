@@ -1,4 +1,5 @@
 import asyncio
+import os
 from aiogram import Dispatcher, Bot, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from data.database import Database
@@ -10,10 +11,13 @@ TOKEN_PAYMENTS = "401643678:TEST:2a495ef0-26a1-4053-b3d5-c149e1f682ce"
 BRON_CHANNEL = "@main_test12"
 storage = MemoryStorage()
 
+path = os.getcwd() + "\\data\\database.db"
+
 try:
     from local_config import *
 except ImportError:
     pass
+
 
 bot = Bot(token=TOKEN, parse_mode=types.ParseMode.HTML)
 dp = Dispatcher(bot, storage=storage, loop=loop)
