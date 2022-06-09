@@ -5,10 +5,18 @@ from app import btndlv, cart
 from aiogram import types
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, ChatActions
 from hendlers.user.catalog import btnnaz
+from aiogram.dispatcher.filters.state import StatesGroup, State
+from aiogram.dispatcher import FSMContext
 
 btn_instr = "⚙️ ИНСТРУКЦИЯ"
 
 kryl_cb = CallbackData('product', 'id', 'action')
+
+
+class AddingsState(StatesGroup):
+    projarka = State()
+    garnish = State()
+    sauce = State()
 
 
 def kryl(idx):
@@ -37,18 +45,18 @@ def projacka_markup(idx):
     return markup
 
 
-garniry_cb = CallbackData('product', 'id', 'action')
+garnish_cb = CallbackData('product', 'id', 'action')
 
 
-def garniry(idx):
-    global garniry_cb
+def garnish(idx):
+    global garnish_cb
 
     markup = InlineKeyboardMarkup()
-    kart_pure = InlineKeyboardButton('Картофельное пюре', callback_data=garniry_cb.new(id=idx, action='pure'))
-    kart_free = InlineKeyboardButton('Картофель фри', callback_data=garniry_cb.new(id=idx, action='free'))
-    kart_dolki = InlineKeyboardButton('Картофельные дольки', callback_data=garniry_cb.new(id=idx, action='dolki'))
-    kukuruza = InlineKeyboardButton('Початок кукурузы (150 гр.)', callback_data=garniry_cb.new(id=idx, action='kuku'))
-    salat = InlineKeyboardButton('Свежий салатик (150 гр.)', callback_data=garniry_cb.new(id=idx, action='salat'))
+    kart_pure = InlineKeyboardButton('Картофельное пюре', callback_data=garnish_cb.new(id=idx, action='pure'))
+    kart_free = InlineKeyboardButton('Картофель фри', callback_data=garnish_cb.new(id=idx, action='free'))
+    kart_dolki = InlineKeyboardButton('Картофельные дольки', callback_data=garnish_cb.new(id=idx, action='dolki'))
+    kukuruza = InlineKeyboardButton('Початок кукурузы (150 гр.)', callback_data=garnish_cb.new(id=idx, action='kuku'))
+    salat = InlineKeyboardButton('Свежий салатик (150 гр.)', callback_data=garnish_cb.new(id=idx, action='salat'))
     markup.add(kart_pure, kart_free)
     markup.add(kart_dolki, kukuruza)
     markup.add(salat)
@@ -137,51 +145,58 @@ async def category_callback_handler(query: types.CallbackQuery, callback_data: d
 
 
 @dp.callback_query_handler(IsUser(), product_cb.filter(action='add'))
-async def add_product_callback_handler(query: types.CallbackQuery, callback_data: dict):
+async def add_product_callback_handler(query: types.CallbackQuery, callback_data: dict, state: FSMContext):
+    product_id = callback_data['id']
+
     idx = ['d2c4042b83301352cfabe1f2e293e03d', 'd21e31622b1b461aec6692ed93e61e5b',
            '6c64de44bccc509c2c0c23cd6d2d0a0d', '988f7a785631056fb53022bca062b89d']
-    if callback_data['id'] in idx:
+
+    if product_id in idx:
         await query.answer('Выберите прожарку')
         await query.message.edit_reply_markup(reply_markup=projacka_markup(callback_data['id']))
-    elif callback_data['id'] in '5f2ae5d354d1d8a4439d0171866c56b7':
-        await query.message.edit_reply_markup(reply_markup=kryl(callback_data['id']))
+        await AddingsState.projarka.set()
+        async with state.proxy() as data:
+            data['idx'] = product_id
+
+    elif product_id in '5f2ae5d354d1d8a4439d0171866c56b7':
+        await query.message.edit_reply_markup(reply_markup=kryl(product_id))
     else:
         db.query('INSERT INTO cart VALUES (?, ?, 1)',
-                (query.message.chat.id, callback_data['id']))
+                (query.message.chat.id, product_id))
         await query.answer('Товар добавлен в корзину!')
 
         await query.message.delete()
 
 
-@dp.callback_query_handler(IsUser(), projarka_cb.filter(action=['blue', 'medium_rare', 'medium',
-                                                                'medium_well', 'well_done']))
-async def projarka(query: types.CallbackQuery, callback_data: dict):
-    print(callback_data)
+@dp.callback_query_handler(IsUser(), projarka_cb.filter(action=['blue_rare', 'medium_rare', 'medium', 'medium_well', 'well_done']), state=AddingsState.projarka)
+async def projarka(query: types.CallbackQuery, callback_data: dict, state: FSMContext):
+    async with state.proxy() as data:
+        data['projarka'] = callback_data['action']
+
     await query.answer('Выберите гарнир')
-    await query.message.edit_reply_markup(reply_markup=garniry(callback_data['id']))
+    await query.message.edit_reply_markup(reply_markup=garnish(callback_data['id']))
+    await AddingsState.next()
 
 
-@dp.callback_query_handler(IsUser(), garniry_cb.filter(action=['pure', 'free', 'dolki',
-                                                               'kuku', 'salat']))
-async def garniry(query: types.CallbackQuery, callback_data: dict):
-    print(callback_data)
+@dp.callback_query_handler(IsUser(), garnish_cb.filter(action=['pure', 'free', 'dolki', 'kuku', 'salat']), state=AddingsState.garnish)
+async def garnish_handler(query: types.CallbackQuery, callback_data: dict, state: FSMContext):
+    async with state.proxy() as data:
+        data['garnish'] = callback_data['action']
+
     await query.answer('Выберите соус')
     await query.message.edit_reply_markup(reply_markup=sous(callback_data['id']))
-    # db.query('INSERT INTO cart VALUES (?, ?, 1)',
-    #          (query.message.chat.id, callback_data['id']))
-    # await query.answer('Товар добавлен в корзину!')
+    await AddingsState.next()
 
-#await query.message.delete()
-@dp.callback_query_handler(IsUser(), sous_cb.filter(action=['blu', 'nacos', 'meks', 'bbq', 'chili']))
-async def projarka(query: types.CallbackQuery, callback_data: dict):
-    # db.query('INSERT INTO wallet VALUES (?, ?)',
-    #          (callback_data['id'], callback_data['action']))
 
-    db.query('INSERT INTO cart VALUES (?, ?, 1)',
-             (query.message.chat.id, callback_data['id']))
+@dp.callback_query_handler(IsUser(), sous_cb.filter(action=['blu', 'nacos', 'meks', 'bbq', 'chili']), state=AddingsState.sauce)
+async def add_to_cart(query: types.CallbackQuery, callback_data: dict, state: FSMContext):
+    async with state.proxy() as data:
+        db.query('INSERT INTO cart VALUES (?, ?, 1, ?, ?, ?)',
+                 (query.message.chat.id, data['idx'], data['projarka'], data['garnish'], callback_data['action']))
+
     await query.answer('Товар добавлен в корзину!')
-
     await query.message.delete()
+    await state.finish()
 
 
 async def show_products(m, products):

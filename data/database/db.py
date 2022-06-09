@@ -11,11 +11,11 @@ class Database(object):
 
     def create_tables(self):
         self.query(
-            'CREATE TABLE IF NOT EXISTS products (idx text, title text, body text, photo blob, price int, tag text, garnish text, sauce text, degree text)')
+            'CREATE TABLE IF NOT EXISTS products (idx text, title text, body text, photo blob, price int, tag text)')
         self.query('CREATE TABLE IF NOT EXISTS orders (cid int, usr_name text, usr_address text, phone_number text,'
                    ' products text)')
         self.query('CREATE TABLE IF NOT EXISTS categories (idx text, title text)')
-        self.query('CREATE TABLE IF NOT EXISTS cart (cid int, idx text, quantity int, comment text)')
+        self.query('CREATE TABLE IF NOT EXISTS cart (cid int, idx text, quantity int, comment text, garnish text, sauce text, degree text)')
         self.query('CREATE TABLE IF NOT EXISTS wallet (cid int, balance real)')
         self.query('CREATE TABLE IF NOT EXISTS questions (cid int, question text)')
 

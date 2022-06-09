@@ -29,7 +29,8 @@ async def process_cart(message: types.Message, state: FSMContext):
         async with state.proxy() as data:
             data['products'] = {}
         order_cost = 0
-        for _, idx, count_in_cart in cart_data:
+
+        for _, idx, count_in_cart, projarka, garnish, sauce in cart_data:
             product = db.fetchone('SELECT * FROM products WHERE idx=?', (idx,))
             if product is None:
                 db.query('DELETE FROM cart WHERE idx=?', (idx,))
@@ -38,6 +39,7 @@ async def process_cart(message: types.Message, state: FSMContext):
                 order_cost += price
                 async with state.proxy() as data:
                     data['products'][idx] = [title, price, count_in_cart]
+
                 markup = product_markup_2(idx, count_in_cart)
                 text = f'<b>{title}</b>\n\n\nЦена: {price}₽.'
                 await message.answer_photo(photo=image,

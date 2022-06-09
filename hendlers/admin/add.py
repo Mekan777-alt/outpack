@@ -224,8 +224,9 @@ async def process_price_invalid(message: types.Message, state: FSMContext):
     markup.add(back_message)
     if message.text == back_message:
         await ProductState.image.set()
-        async with state.proxy() as data:
-            await message.answer("Другое изображение?", reply_markup=markup)
+        markup = back_markup()
+        markup.add("Без фото")
+        await message.answer("Другое изображение?", reply_markup=markup)
     else:
         await message.answer('Укажите цену в виде числа!')
 
