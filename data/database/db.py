@@ -15,7 +15,7 @@ class Database(object):
         self.query('CREATE TABLE IF NOT EXISTS orders (cid int, usr_name text, usr_address text, phone_number text,'
                    ' products text)')
         self.query('CREATE TABLE IF NOT EXISTS categories (idx text, title text)')
-        self.query('CREATE TABLE IF NOT EXISTS cart (cid int, idx text, quantity int, comment text, garnish text, sauce text, degree text)')
+        self.query('CREATE TABLE IF NOT EXISTS cart (cid int, idx text, quantity int, comment text, garnish text, sauce text, degree text, spice text, amount int)')
         self.query('CREATE TABLE IF NOT EXISTS wallet (cid int, balance real)')
         self.query('CREATE TABLE IF NOT EXISTS questions (cid int, question text)')
 

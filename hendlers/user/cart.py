@@ -9,13 +9,30 @@ from config import dp, db, bot, BRON_CHANNEL, TOKEN_PAYMENTS
 from filters import IsUser
 from hendlers.admin.add import check_markup, back_message, all_right_message, back_markup, confirm_markup, \
     confirm_message, back
-from hendlers.user.dostavka import product_markup_2, product_cb, product_cb_2, dyl_start
+from hendlers.user.dostavka import dyl_start, projarkas, garnishs, sauces
+from aiogram.utils.callback_data import CallbackData
 
 b54 = KeyboardButton("📞 Отправить свой номер", request_contact=True)
 send_phone = ReplyKeyboardMarkup(resize_keyboard=True).add(b54)
 
 dostavka = "🎒 ДОСТАВКА"
 samovyvoz = "🚗 САМОВЫВОЗ"
+
+
+product_cb_2 = CallbackData('product', 'id', 'action')
+
+
+def product_markup_2(idx, count):
+    global product_cb_2
+
+    markup = InlineKeyboardMarkup()
+    back_btn = InlineKeyboardButton('➖', callback_data=product_cb_2.new(id=idx, action='decrease'))
+    count_btn = InlineKeyboardButton(count, callback_data=product_cb_2.new(id=idx, action='count'))
+    next_btn = InlineKeyboardButton('➕️', callback_data=product_cb_2.new(id=idx, action='increase'))
+
+    markup.row(back_btn, count_btn, next_btn)
+
+    return markup
 
 
 @dp.message_handler(IsUser(), text=cart)
@@ -30,21 +47,50 @@ async def process_cart(message: types.Message, state: FSMContext):
             data['products'] = {}
         order_cost = 0
 
-        for _, idx, count_in_cart, projarka, garnish, sauce in cart_data:
+        for _, idx, count_in_cart, projarka, garnish, sauce, spice, amount in cart_data:
             product = db.fetchone('SELECT * FROM products WHERE idx=?', (idx,))
             if product is None:
                 db.query('DELETE FROM cart WHERE idx=?', (idx,))
             else:
                 _, title, body, image, price, _ = product
+
+                markup = product_markup_2(idx, count_in_cart)
+                text = f'<b>{title}</b>\n'
+
+                if projarka:
+                    text += f"<b>Прожарка</b>: {projarkas.get(projarka)}\n" \
+                            f"<b>Гарнир</b>: {garnishs.get(garnish)}\n" \
+                            f"<b>Соус</b>: {sauces.get(sauce)}"
+
+                elif spice:
+                    if spice == 'medium':
+                        spice = 'средней остроты'
+                    elif spice == 'spicy':
+                        spice = 'острые'
+
+                    text += f"<b>Острота</b>: {spice}\n" \
+                            f"<b>Количество</b>: {amount}"
+
+                    price = price.split("/")
+
+                    if amount == 8:
+                        price = int(price[0])
+                    elif amount == 16:
+                        price = int(price[1])
+
+                text += f"\n\n\nЦена: {price}₽."
+
+                if image:
+                    await message.answer_photo(photo=image,
+                                               caption=text,
+                                               reply_markup=markup)
+                else:
+                    await message.answer(text=text, reply_markup=markup)
+
                 order_cost += price
                 async with state.proxy() as data:
                     data['products'][idx] = [title, price, count_in_cart]
 
-                markup = product_markup_2(idx, count_in_cart)
-                text = f'<b>{title}</b>\n\n\nЦена: {price}₽.'
-                await message.answer_photo(photo=image,
-                                           caption=text,
-                                           reply_markup=markup)
         if order_cost != 0:
             markup = ReplyKeyboardMarkup(resize_keyboard=True, selective=True)
             markup.add('📦 Оформить заказ', "🗑 Очистить корзину").add(back)
