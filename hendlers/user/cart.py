@@ -233,7 +233,7 @@ async def chek_dyl(message: types.Message, state: FSMContext):
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add(dostavka, samovyvoz).add(back_message)
     await CheckoutState.next()
-    await message.answer("Как будете забирать заказ", reply_markup=markup)
+    await message.answer("Укажите вариант доставки", reply_markup=markup)
 
 
 @dp.message_handler(IsUser(), text=back_message, state=CheckoutState.dylevery)
@@ -293,7 +293,7 @@ async def process_name(message: Message, state: FSMContext):
         #     await CheckoutState.confirm.set()
 
         else:
-            await message.answer('Укажите свой адрес места жительства.',
+            await message.answer('Укажите адрес доставки',
                                  reply_markup=back_markup())
 
 
