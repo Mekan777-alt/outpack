@@ -2,7 +2,7 @@ from datetime import datetime
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.types import Message, ChatActions, ReplyKeyboardMarkup, CallbackQuery, ReplyKeyboardRemove, \
+from aiogram.types import Message, ChatActions, ReplyKeyboardMarkup, CallbackQuery, \
     InlineKeyboardMarkup, InlineKeyboardButton, KeyboardButton, ContentType
 from app import cart, btnbar, btnMenu, btnTime, btnBrn, btndlv
 from config import dp, db, bot, BRON_CHANNEL, TOKEN_PAYMENTS
@@ -19,6 +19,26 @@ dostavka = "🎒 ДОСТАВКА"
 samovyvoz = "🚗 САМОВЫВОЗ"
 
 product_cb_2 = CallbackData('product', 'id', 'action')
+
+
+def steak_text(projarka, garnish, sauce):
+    text = f"<b>Прожарка</b>: {projarkas.get(projarka)}\n" \
+           f"<b>Гарнир</b>: {garnishs.get(garnish)}\n" \
+           f"<b>Соус</b>: {sauces.get(sauce)}"
+
+    return text
+
+
+def wings_text(spice, amount):
+    if spice == 'medium':
+        spice = 'средней остроты'
+    elif spice == 'spicy':
+        spice = 'острые'
+
+    text = f"<b>Острота</b>: {spice}\n" \
+           f"<b>Количество</b>: {amount} штук"
+
+    return text
 
 
 def product_markup_2(idx, count):
@@ -55,20 +75,13 @@ async def process_cart(message: types.Message, state: FSMContext):
 
                 markup = product_markup_2(idx, count_in_cart)
                 text = f'<b>{title}</b>\n'
+                info = ""
 
                 if projarka:
-                    text += f"<b>Прожарка</b>: {projarkas.get(projarka)}\n" \
-                            f"<b>Гарнир</b>: {garnishs.get(garnish)}\n" \
-                            f"<b>Соус</b>: {sauces.get(sauce)}"
+                    info = steak_text(projarka, garnish, sauce)
 
                 elif spice:
-                    if spice == 'medium':
-                        spice = 'средней остроты'
-                    elif spice == 'spicy':
-                        spice = 'острые'
-
-                    text += f"<b>Острота</b>: {spice}\n" \
-                            f"<b>Количество</b>: {amount}"
+                    info = wings_text(spice, amount)
 
                     price = price.split("/")
 
@@ -76,6 +89,8 @@ async def process_cart(message: types.Message, state: FSMContext):
                         price = int(price[0])
                     elif amount == 16:
                         price = int(price[1])
+
+                text += info
 
                 text += f"\n\n\nЦена: {price}₽."
 
@@ -88,14 +103,17 @@ async def process_cart(message: types.Message, state: FSMContext):
 
                 order_cost += price
                 async with state.proxy() as data:
-                    data['products'][idx] = [title, price, count_in_cart]
+                    if data['products'].get(idx):
+                        idx += "2"
+
+                    data['products'][idx] = [title, price, count_in_cart, info]
 
         if order_cost != 0:
             markup = ReplyKeyboardMarkup(resize_keyboard=True, selective=True)
             markup.add('📦 Оформить заказ', "🗑 Очистить корзину").add(back)
 
             await message.answer('Отличный выбор, теперь эти блюда в корзине.\n'
-                                 'Нажми на кнопки перейти к оформлению или назад',
+                                 'Нажми на кнопки оформить заказ или назад',
                                  reply_markup=markup)
 
 
@@ -167,11 +185,11 @@ async def delete_cart(message: types.Message):
 async def process_checkout(message: Message, state: FSMContext):
     async with state.proxy() as data:
         total_price = 0
-        for title, price, count_in_cart in data['products'].values():
+        for title, price, count_in_cart, info in data['products'].values():
             tp = count_in_cart * price
             total_price += tp
         if total_price < 1500:
-            await message.answer(f"Еще закажите на {1500 - total_price} рублей чтобы совершить заказ")
+            await message.answer(f"Закажите ещё на {1500 - total_price} рублей чтобы совершить заказ")
         else:
             await CheckoutState.check_cart.set()
             await checkout(message, state)
@@ -183,7 +201,7 @@ async def checkout(message, state):
     total_price = 0
 
     async with state.proxy() as data:
-        for title, price, count_in_cart in data['products'].values():
+        for title, price, count_in_cart, info in data['products'].values():
             tp = count_in_cart * price
             answer += f'<b>{title}</b> * {count_in_cart}шт. = {tp}₽\n'
             total_price += tp
@@ -313,54 +331,39 @@ async def process_address(message: Message, state: FSMContext):
 
 @dp.message_handler(IsUser(), state=CheckoutState.phone_number)
 async def process_phone_number(message: types.Message, state: FSMContext):
-    async with state.proxy() as data:
-        data['phone_number'] = message.text
-        await confirm(message, state)
-        await CheckoutState.next()
+    await CheckoutState.next()
+    await confirm(message, state, message.text)
 
 
 @dp.message_handler(IsUser(), content_types=ContentType.CONTACT, state=CheckoutState.phone_number)
-async def phone_number(message: Message, state: FSMContext):
+async def handle_contact(message: Message, state: FSMContext):
     async with state.proxy() as data:
         data['phone_number'] = message.contact['phone_number']
-        await CheckoutState.next()
-        await confirm(message, state)
+
+    await CheckoutState.next()
+    await confirm(message, state, message.contact['phone_number'])
 
 
-async def confirm(message, state):
+async def confirm(message, state, phone_number):
     async with state.proxy() as data:
         total_price = 0
         an = ''
-        if data['dylevery'] == dostavka:
-            for title, price, count_in_cart in data['products'].values():
-                tp = count_in_cart * price
-                an += f'<b>{title}</b> - {count_in_cart}шт\n'
-                total_price += tp
-            await message.answer(f"Убедитесь, что все правильно оформлено и подтвердите заказ.\n"
-                                 f"Данные заказа:\n"
-                                 f"Получатель: {data['name']}\n"
-                                 # f"Номер телефона получателя {data['phone_number']}\n"
-                                 f"Общая стоимость {total_price} рублей\n"
-                                 f"\n"
-                                 f"Ваш заказ:\n"
-                                 f"{an}",
-                                 reply_markup=confirm_markup())
-        else:
-            for title, price, count_in_cart in data['products'].values():
-                tp = count_in_cart * price
-                an += f'<b>{title}</b> - {count_in_cart}шт\n'
-                total_price += tp
-            await message.answer(f"Убедитесь, что все правильно оформлено и подтвердите заказ.\n"
-                                 f"Данные заказа:\n"
-                                 f"Получатель: {data['name']}\n"
-                                 # f"Номер телефона получателя {data['address']}\n"
-                                 f"Общая стоимость {total_price} рублей\n"
-                                 f"\n"
-                                 f"Ваш заказ:\n"
-                                 f"{an}"
-                                 f"Хостес вам перезвонит для подтверждение заказа",
+        for title, price, count_in_cart, info in data['products'].values():
+            tp = count_in_cart * price
+            an += f'<b>{title}</b> - {count_in_cart}шт\n{info}\n\n'
+            total_price += tp
 
-                                 reply_markup=confirm_markup())
+        text = f"Убедитесь, что все правильно оформлено и подтвердите заказ.\n\n" \
+               f"Данные заказа:\n" \
+               f"Получатель: {data['name']}\n" \
+               f"Номер телефона получателя {phone_number}\n" \
+               f"Общая стоимость {total_price} рублей\n\n" \
+               f"Ваш заказ:\n{an}"
+
+        if data['dylevery'] == samovyvoz:
+            text += "Хостес вам перезвонит для подтверждение заказа"
+
+        await message.answer(text, reply_markup=confirm_markup())
 
 
 @dp.message_handler(IsUser(), lambda message: message.text not in [confirm_message, back_message],
@@ -374,7 +377,7 @@ async def process_confirm(message: Message, state: FSMContext):
     global MESSAGE
     total_price = 0
     async with state.proxy() as data:
-        for title, price, count_in_cart in data['products'].values():
+        for title, price, count_in_cart, info in data['products'].values():
             tp = count_in_cart * price
             total_price += tp
         total_price *= 100
@@ -417,11 +420,13 @@ async def process_successful_payment(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         total_price = 0
         an = ''
-        for title, price, count_in_cart in data['products'].values():
+
+        for title, price, count_in_cart, info in data['products'].values():
             tp = count_in_cart * price
-            an += f'<b>{title}</b> - {count_in_cart}шт = {tp}рублей\n'
+            an += f'<b>{title}</b> - {count_in_cart}шт = {tp}рублей\n{info}\n\n'
             total_price += tp
         now = datetime.now()
+
         if data['dylevery'] == dostavka:
             variant = "Доставка"
         else:

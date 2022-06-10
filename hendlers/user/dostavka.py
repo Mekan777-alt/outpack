@@ -40,8 +40,8 @@ def spice_markup(idx):
 def amount_markup(idx):
     global kryl_cb
     markup = InlineKeyboardMarkup()
-    medium = InlineKeyboardButton('8', callback_data=projarka_cb.new(id=idx, action='8'))
-    spicy = InlineKeyboardButton('16', callback_data=projarka_cb.new(id=idx, action='16'))
+    medium = InlineKeyboardButton('8 штук', callback_data=projarka_cb.new(id=idx, action='8'))
+    spicy = InlineKeyboardButton('16 штук', callback_data=projarka_cb.new(id=idx, action='16'))
     markup.add(medium, spicy)
     return markup
 
@@ -69,7 +69,7 @@ garnish_cb = CallbackData('product', 'id', 'action')
 def garnish(idx):
     global garnish_cb
 
-    markup = InlineKeyboardMarkup(row_width=2)
+    markup = InlineKeyboardMarkup(row_width=1)
     buttons = []
     for key, value in garnishs.items():
         btn = InlineKeyboardButton(value, callback_data=garnish_cb.new(id=idx, action=key))
@@ -128,7 +128,7 @@ def dyl_markup():
 
 @dp.message_handler(IsUser(), text=btndlv)
 async def dyl_start(message: types.Message):
-    await message.answer("Минимальная сумма заказа состовляет 1500 рублей", reply_markup=dyl_markup())
+    await message.answer("Минимальная сумма заказа 1500 рублей", reply_markup=dyl_markup())
     await message.answer("ВЫБЕРИТЕ РАЗДЕЛ", reply_markup=categories_markup())
 
 
