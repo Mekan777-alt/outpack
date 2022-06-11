@@ -30,8 +30,10 @@ def steak_text(projarka, garnish, sauce):
 
 
 def wings_text(spice, amount):
-    if spice == 'medium':
-        spice = 'средней остроты'
+    if spice == 'not_spicy':
+        spice = 'не острые'
+    elif spice == 'medium':
+        spice = 'средние'
     elif spice == 'spicy':
         spice = 'острые'
 
@@ -281,7 +283,6 @@ async def process_name(message: Message, state: FSMContext):
     async with state.proxy() as data:
 
         data['name'] = message.text
-        await CheckoutState.next()
 
         if data['dylevery'] == samovyvoz:
             await CheckoutState.phone_number.set()
@@ -293,8 +294,8 @@ async def process_name(message: Message, state: FSMContext):
         #     await CheckoutState.confirm.set()
 
         else:
-            await message.answer('Укажите адрес доставки',
-                                 reply_markup=back_markup())
+            await message.answer('Укажите адрес доставки', reply_markup=back_markup())
+            await CheckoutState.next()
 
 
 @dp.message_handler(IsUser(), text=back_message, state=CheckoutState.confirm)
@@ -353,15 +354,25 @@ async def confirm(message, state, phone_number):
             an += f'<b>{title}</b> - {count_in_cart}шт\n{info}\n\n'
             total_price += tp
 
+        address = ""
+
+        if data['dylevery'] == dostavka:
+            variant = "Доставка"
+            address = f"Адрес доставки: {data['address']}\n"
+        else:
+            variant = "Самовывоз"
+
         text = f"Убедитесь, что все правильно оформлено и подтвердите заказ.\n\n" \
-               f"Данные заказа:\n" \
+               f"<b>Данные заказа</b>\n" \
+               f"Способ получения: {variant}\n" \
+               f"{address}" \
                f"Получатель: {data['name']}\n" \
-               f"Номер телефона получателя {phone_number}\n" \
-               f"Общая стоимость {total_price} рублей\n\n" \
+               f"Номер телефона получателя: {phone_number}\n" \
+               f"Общая стоимость: {total_price} рублей\n\n" \
                f"Ваш заказ:\n{an}"
 
         if data['dylevery'] == samovyvoz:
-            text += "Хостес вам перезвонит для подтверждение заказа"
+            text += "Хостес вам перезвонит для подтверждения заказа"
 
         await message.answer(text, reply_markup=confirm_markup())
 
@@ -374,38 +385,41 @@ async def process_confirm_invalid(message: Message):
 
 @dp.message_handler(IsUser(), text=confirm_message, state=CheckoutState.confirm)
 async def process_confirm(message: Message, state: FSMContext):
-    global MESSAGE
-    total_price = 0
-    async with state.proxy() as data:
-        for title, price, count_in_cart, info in data['products'].values():
-            tp = count_in_cart * price
-            total_price += tp
-        total_price *= 100
-        PRICE = types.LabeledPrice(label=MESSAGE['label'][0], amount=total_price)
-        await bot.send_invoice(message.chat.id,
-                               title=MESSAGE['price'],
-                               description="hello",
-                               provider_token=TOKEN_PAYMENTS,
-                               currency='rub',
-                               is_flexible=False,  # True If you need to set up Shipping Fee
-                               prices=[PRICE],
-                               start_parameter='time-machine-example',
-                               payload='some-invoice-payload-for-our-internal-use')
+    try:
+        global MESSAGE
+        total_price = 0
+        async with state.proxy() as data:
+            for title, price, count_in_cart, info in data['products'].values():
+                tp = count_in_cart * price
+                total_price += tp
+            total_price *= 100
+            PRICE = types.LabeledPrice(label=MESSAGE['label'][0], amount=total_price)
+            await bot.send_invoice(message.chat.id,
+                                   title=MESSAGE['price'],
+                                   description="hello",
+                                   provider_token=TOKEN_PAYMENTS,
+                                   currency='rub',
+                                   is_flexible=False,  # True If you need to set up Shipping Fee
+                                   prices=[PRICE],
+                                   start_parameter='time-machine-example',
+                                   payload='some-invoice-payload-for-our-internal-use')
 
-        cid = message.chat.id
-        products = [idx + '=' + str(quantity)
-                    for idx, quantity in db.fetchall('''SELECT idx, quantity FROM cart
-        WHERE cid=?''', (cid,))]  # idx=quantity
-        if data['dylevery'] == samovyvoz:
-            db.query("INSERT INTO orders VALUES (?, ?, 'False,', ?, ?)",
-                     (cid, data['name'], data['phone_number'], ' '.join(products)))
-        else:
-            db.query('INSERT INTO orders VALUES (?, ?, ?, ?, ?)',
-                     (cid, data['name'], data['address'], data['phone_number'], ' '.join(products)))
+            cid = message.chat.id
+            products = [idx + '=' + str(quantity)
+                        for idx, quantity in db.fetchall('''SELECT idx, quantity FROM cart
+            WHERE cid=?''', (cid,))]  # idx=quantity
+            if data['dylevery'] == samovyvoz:
+                db.query("INSERT INTO orders VALUES (?, ?, 'False,', ?, ?)",
+                         (cid, data['name'], data['phone_number'], ' '.join(products)))
+            else:
+                db.query('INSERT INTO orders VALUES (?, ?, ?, ?, ?)',
+                         (cid, data['name'], data['address'], data['phone_number'], ' '.join(products)))
 
-        # db.query('DELETE FROM cart WHERE cid=?', (cid,))
+            # db.query('DELETE FROM cart WHERE cid=?', (cid,))
 
-    await CheckoutState.next()
+        await CheckoutState.next()
+    except:
+        await message.answer('Что-то пошло не так. Попробуйте ещё раз.')
 
 
 @dp.message_handler(content_types=ContentType.SUCCESSFUL_PAYMENT)
@@ -427,17 +441,20 @@ async def process_successful_payment(message: types.Message, state: FSMContext):
             total_price += tp
         now = datetime.now()
 
+        address = ""
+
         if data['dylevery'] == dostavka:
             variant = "Доставка"
+            address = f"Адрес доставки: {data['address']}\n"
         else:
             variant = "Самовывоз"
 
-        await bot.send_message(BRON_CHANNEL, f"{variant}\n\n"
+        await bot.send_message(BRON_CHANNEL, f"<b>{variant}</b>\n\n"
                                              f"Имя получателя: {data['name']}\n"
                                              f"Время: {now.hour}:{now.minute}\n"
                                              f"Дата: {now.date().strftime('%d-%m-%y')}\n"
-                                             f"Адрес доставки: {data['address']}\n"
                                              f"Способ получения: {data['dylevery']}\n"
+                                             f"{address}"
                                              f"Общая стоимость: {total_price} рублей\n"
                                              f"Номер телефона: {data['phone_number']}\n"
                                              f"\n"

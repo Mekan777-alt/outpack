@@ -24,7 +24,7 @@ btnsous = "🍽 СОУСА И ГАРНИРЫ"
 btnnaz = "🔙 НАЗАД"
 
 
-@dp.message_handler(IsUser(), text=btnMenu)
+@dp.message_handler(IsUser(), text=[btnMenu])
 async def catalog(message: types.Message):
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
     markup.row(btnkitchen, btnbzn, btngril).add(btngor, btnsup, btnkids).add(btnsous, btndes, btnnaz)

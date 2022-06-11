@@ -4,7 +4,7 @@ from filters import IsUser
 from app import btndlv, cart
 from aiogram import types
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, ChatActions
-from hendlers.user.catalog import btnnaz
+from hendlers.user.catalog import btnnaz, btnMenu
 from aiogram.dispatcher.filters.state import StatesGroup, State
 from aiogram.dispatcher import FSMContext
 
@@ -12,7 +12,7 @@ btn_instr = "⚙️ ИНСТРУКЦИЯ"
 
 projarkas = {"blue_rare": "Blue rare", "medium_rare": "Medium rare", "medium": "Medium", "medium_well": "Medium well", "well_done": "Well done"}
 garnishs = {"pure": "Картофельное пюре", "free": "Картофель фри", "dolki": "Картофельные дольки", "kuku": "Початок кукурузы (150 гр.)", "salat": "Свежий салатик (150 гр.)"}
-sauces = {"blu": "Соус блю чиз", "nacos": "Соус начос", "meks": "Соус мексиканская сальса", "bbq": "Соус BBQ", "chili": "Соус сладкий чили"}
+sauces = {"blu": "Соус блю чиз", "nacos": "Соус начос", "chili": "Сладкий чили", "bbq": "Соус BBQ", "meks": "Мексиканская сальса"}
 
 kryl_cb = CallbackData('product', 'id', 'action')
 
@@ -24,16 +24,17 @@ class SteakAddingsState(StatesGroup):
 
 
 class WingsAddingsState(StatesGroup):
-    spice = State()
     amount = State()
+    spice = State()
 
 
 def spice_markup(idx):
     global kryl_cb
     markup = InlineKeyboardMarkup()
-    medium = InlineKeyboardButton('Средняя острота', callback_data=kryl_cb.new(id=idx, action='medium'))
+    not_spicy = InlineKeyboardButton('Не острые', callback_data=kryl_cb.new(id=idx, action='not_spicy'))
+    medium = InlineKeyboardButton('Средние', callback_data=kryl_cb.new(id=idx, action='medium'))
     spicy = InlineKeyboardButton('Острые', callback_data=kryl_cb.new(id=idx, action='spicy'))
-    markup.add(medium, spicy)
+    markup.add(not_spicy, medium, spicy)
     return markup
 
 
@@ -122,7 +123,9 @@ def categories_markup():
 
 def dyl_markup():
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.add(btn_instr, btnnaz).add(cart)
+    markup.add(btnMenu)
+    markup.add(btn_instr)
+    markup.add(btnnaz, cart)
     return markup
 
 
@@ -152,9 +155,9 @@ async def add_product_callback_handler(query: types.CallbackQuery, callback_data
 
     if product_id in idx:
         if product_id == idx[-1]:
-            msg = 'Выберите остроту'
-            markup = spice_markup(product_id)
-            await WingsAddingsState.spice.set()
+            msg = 'Выберите количество крылышек'
+            markup = amount_markup(product_id)
+            await WingsAddingsState.amount.set()
         else:
             msg = 'Выберите прожарку'
             markup = projarka_markup(product_id)
@@ -204,25 +207,25 @@ async def sauce_handler(query: types.CallbackQuery, callback_data: dict, state: 
     await state.finish()
 
 
-@dp.callback_query_handler(IsUser(), kryl_cb.filter(action=['medium', 'spicy']), state=WingsAddingsState.spice)
-async def spice_handler(query: types.CallbackQuery, callback_data: dict, state: FSMContext):
-    async with state.proxy() as data:
-        data['spice'] = callback_data['action']
-
-    await query.answer('Выберите количество крылышек')
-    await query.message.edit_reply_markup(reply_markup=amount_markup(callback_data['id']))
-    await WingsAddingsState.next()
-
-
 @dp.callback_query_handler(IsUser(), kryl_cb.filter(action=['8', '16']), state=WingsAddingsState.amount)
 async def amount_handler(query: types.CallbackQuery, callback_data: dict, state: FSMContext):
     async with state.proxy() as data:
+        data['amount'] = callback_data['action']
+
+    await query.answer('Выберите остроту')
+    await query.message.edit_reply_markup(reply_markup=spice_markup(callback_data['id']))
+    await WingsAddingsState.next()
+
+
+@dp.callback_query_handler(IsUser(), kryl_cb.filter(action=['not_spicy', 'medium', 'spicy']), state=WingsAddingsState.spice)
+async def spice_handler(query: types.CallbackQuery, callback_data: dict, state: FSMContext):
+    async with state.proxy() as data:
         db.query('INSERT INTO cart VALUES (?, ?, 1, null, null, null, ?, ?)',
-                 (query.message.chat.id, data['idx'], data['spice'], callback_data['action']))
+                 (query.message.chat.id, data['idx'], callback_data['action'], data['amount']))
 
     await query.answer('Товар добавлен в корзину!')
-    await query.message.delete()
     await state.finish()
+    await query.message.delete()
 
 
 async def show_products(m, products):
