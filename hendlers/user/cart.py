@@ -147,7 +147,7 @@ async def product_callback_handler(query: CallbackQuery, callback_data: dict, st
                     await query.message.delete()
                 else:
                     db.query('''UPDATE cart
-                    SET quantity = ?
+                        SET quantity = ?
                     WHERE cid = ? AND idx = ?''', (count_in_cart, query.message.chat.id, idx))
                     await query.message.edit_reply_markup(product_markup_2(idx, count_in_cart))
 

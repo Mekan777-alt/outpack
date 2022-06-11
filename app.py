@@ -6,6 +6,7 @@ from aiogram import types
 from aiogram.types import ReplyKeyboardMarkup
 import filters
 from filters import IsUser, IsAdmin
+from aiogram.dispatcher import FSMContext
 
 filters.setup(dp)
 
@@ -23,8 +24,9 @@ btndlv = "🎒 ДОСТАВКА"
 orders = '🚚 Заказы'
 
 
-@dp.message_handler(IsUser(), commands="start")
-async def cmd_start(message: types.Message):
+@dp.message_handler(IsUser(), commands="start", state="*")
+async def cmd_start(message: types.Message, state: FSMContext):
+    await state.finish()
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
     markup.row(btnMenu, btnbar, btnTime).add(btnBrn, btndlv)
     await message.answer('ДОБРО ПОЖАЛОВАТЬ, {0.first_name}\n'

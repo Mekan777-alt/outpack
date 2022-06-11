@@ -17,17 +17,6 @@ sauces = {"blu": "Соус блю чиз", "nacos": "Соус начос", "chil
 kryl_cb = CallbackData('product', 'id', 'action')
 
 
-class SteakAddingsState(StatesGroup):
-    projarka = State()
-    garnish = State()
-    sauce = State()
-
-
-class WingsAddingsState(StatesGroup):
-    amount = State()
-    spice = State()
-
-
 def spice_markup(idx):
     global kryl_cb
     markup = InlineKeyboardMarkup()
@@ -157,11 +146,9 @@ async def add_product_callback_handler(query: types.CallbackQuery, callback_data
         if product_id == idx[-1]:
             msg = 'Выберите количество крылышек'
             markup = amount_markup(product_id)
-            await WingsAddingsState.amount.set()
         else:
             msg = 'Выберите прожарку'
             markup = projarka_markup(product_id)
-            await SteakAddingsState.projarka.set()
 
         await query.answer(msg)
         await query.message.edit_reply_markup(reply_markup=markup)
@@ -176,27 +163,25 @@ async def add_product_callback_handler(query: types.CallbackQuery, callback_data
         await query.message.delete()
 
 
-@dp.callback_query_handler(IsUser(), projarka_cb.filter(action=['blue_rare', 'medium_rare', 'medium', 'medium_well', 'well_done']), state=SteakAddingsState.projarka)
+@dp.callback_query_handler(IsUser(), projarka_cb.filter(action=['blue_rare', 'medium_rare', 'medium', 'medium_well', 'well_done']))
 async def projarka_handler(query: types.CallbackQuery, callback_data: dict, state: FSMContext):
     async with state.proxy() as data:
         data['projarka'] = callback_data['action']
 
     await query.answer('Выберите гарнир')
     await query.message.edit_reply_markup(reply_markup=garnish(callback_data['id']))
-    await SteakAddingsState.next()
 
 
-@dp.callback_query_handler(IsUser(), garnish_cb.filter(action=['pure', 'free', 'dolki', 'kuku', 'salat']), state=SteakAddingsState.garnish)
+@dp.callback_query_handler(IsUser(), garnish_cb.filter(action=['pure', 'free', 'dolki', 'kuku', 'salat']))
 async def garnish_handler(query: types.CallbackQuery, callback_data: dict, state: FSMContext):
     async with state.proxy() as data:
         data['garnish'] = callback_data['action']
 
     await query.answer('Выберите соус')
     await query.message.edit_reply_markup(reply_markup=sous(callback_data['id']))
-    await SteakAddingsState.next()
 
 
-@dp.callback_query_handler(IsUser(), sous_cb.filter(action=['blu', 'nacos', 'meks', 'bbq', 'chili']), state=SteakAddingsState.sauce)
+@dp.callback_query_handler(IsUser(), sous_cb.filter(action=['blu', 'nacos', 'meks', 'bbq', 'chili']))
 async def sauce_handler(query: types.CallbackQuery, callback_data: dict, state: FSMContext):
     async with state.proxy() as data:
         db.query('INSERT INTO cart VALUES (?, ?, 1, ?, ?, ?, null, null)',
@@ -204,27 +189,24 @@ async def sauce_handler(query: types.CallbackQuery, callback_data: dict, state: 
 
     await query.answer('Товар добавлен в корзину!')
     await query.message.delete()
-    await state.finish()
 
 
-@dp.callback_query_handler(IsUser(), kryl_cb.filter(action=['8', '16']), state=WingsAddingsState.amount)
+@dp.callback_query_handler(IsUser(), kryl_cb.filter(action=['8', '16']))
 async def amount_handler(query: types.CallbackQuery, callback_data: dict, state: FSMContext):
     async with state.proxy() as data:
         data['amount'] = callback_data['action']
 
     await query.answer('Выберите остроту')
     await query.message.edit_reply_markup(reply_markup=spice_markup(callback_data['id']))
-    await WingsAddingsState.next()
 
 
-@dp.callback_query_handler(IsUser(), kryl_cb.filter(action=['not_spicy', 'medium', 'spicy']), state=WingsAddingsState.spice)
+@dp.callback_query_handler(IsUser(), kryl_cb.filter(action=['not_spicy', 'medium', 'spicy']))
 async def spice_handler(query: types.CallbackQuery, callback_data: dict, state: FSMContext):
     async with state.proxy() as data:
         db.query('INSERT INTO cart VALUES (?, ?, 1, null, null, null, ?, ?)',
                  (query.message.chat.id, data['idx'], callback_data['action'], data['amount']))
 
     await query.answer('Товар добавлен в корзину!')
-    await state.finish()
     await query.message.delete()
 
 
