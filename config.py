@@ -21,4 +21,5 @@ except ImportError:
 
 bot = Bot(token=TOKEN, parse_mode=types.ParseMode.HTML)
 dp = Dispatcher(bot, storage=storage, loop=loop)
+path = '/Users/mekanmededov/Desktop/outpack/data/database.db'
 db = Database(path)

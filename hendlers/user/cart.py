@@ -455,8 +455,8 @@ async def process_successful_payment(message: types.Message, state: FSMContext):
                                              f"Дата: {now.date().strftime('%d-%m-%y')}\n"
                                              f"Способ получения: {data['dylevery']}\n"
                                              f"{address}"
-                                             f"Общая стоимость: {total_price} рублей\n"
                                              f"Номер телефона: {data['phone_number']}\n"
+                                             f"Общая стоимость: {total_price} рублей\n"
                                              f"\n"
                                              f"Блюдо: \n"
                                              f"{an}")

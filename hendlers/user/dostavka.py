@@ -14,6 +14,7 @@ projarkas = {"blue_rare": "Blue rare", "medium_rare": "Medium rare", "medium": "
 garnishs = {"pure": "Картофельное пюре", "free": "Картофель фри", "dolki": "Картофельные дольки", "kuku": "Початок кукурузы (150 гр.)", "salat": "Свежий салатик (150 гр.)"}
 sauces = {"blu": "Соус блю чиз", "nacos": "Соус начос", "chili": "Сладкий чили", "bbq": "Соус BBQ", "meks": "Мексиканская сальса"}
 
+
 kryl_cb = CallbackData('product', 'id', 'action')
 
 
@@ -41,14 +42,31 @@ projarka_cb = CallbackData('product', 'id', 'action')
 
 def projarka_markup(idx):
     global projarka_cb
-
     markup = InlineKeyboardMarkup(row_width=3)
-    buttons = []
-    for key, value in projarkas.items():
-        btn = InlineKeyboardButton(value, callback_data=projarka_cb.new(id=idx, action=key))
-        buttons.append(btn)
 
-    markup.add(*buttons)
+    if idx in '33d35788f4deebe976552e9b4bd28913':
+        btn = InlineKeyboardButton('Medium', callback_data=projarka_cb_2.new(id=idx, action='medium'))
+        markup.add(btn)
+    else:
+        buttons = []
+        for key, value in projarkas.items():
+            btn = InlineKeyboardButton(value, callback_data=projarka_cb.new(id=idx, action=key))
+            buttons.append(btn)
+
+        markup.add(*buttons)
+
+    return markup
+
+
+projarka_cb_2 = CallbackData('product', 'id', 'action')
+
+
+def projarka_markup_2(idx):
+    global projarka_cb_2
+
+    markup = InlineKeyboardMarkup()
+    btn = InlineKeyboardButton('Medium', callback_data=projarka_cb_2.new(id=idx, action='medium'))
+    markup.add(btn)
 
     return markup
 
@@ -112,7 +130,7 @@ def categories_markup():
 
 def dyl_markup():
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.add(btnMenu)
+    markup.add('📖 Меню')
     markup.add(btn_instr)
     markup.add(btnnaz, cart)
     return markup
@@ -121,6 +139,11 @@ def dyl_markup():
 @dp.message_handler(IsUser(), text=btndlv)
 async def dyl_start(message: types.Message):
     await message.answer("Минимальная сумма заказа 1500 рублей", reply_markup=dyl_markup())
+    await message.answer("ВЫБЕРИТЕ РАЗДЕЛ", reply_markup=categories_markup())
+
+
+@dp.message_handler(IsUser(), text='📖 Меню')
+async def menu(message: types.Message):
     await message.answer("ВЫБЕРИТЕ РАЗДЕЛ", reply_markup=categories_markup())
 
 
@@ -140,7 +163,10 @@ async def add_product_callback_handler(query: types.CallbackQuery, callback_data
 
     idx = ['d2c4042b83301352cfabe1f2e293e03d', 'd21e31622b1b461aec6692ed93e61e5b',
            '6c64de44bccc509c2c0c23cd6d2d0a0d', '988f7a785631056fb53022bca062b89d',
-           '5f2ae5d354d1d8a4439d0171866c56b7']
+           '7e3db5c3c00bdb2ebd02e49214cc15f4', 'efc44a03ce222a21b93c66fa6fb489ca',
+           '2097656498cb47e1ef11576e5d221ec2', '35106c4ba8cbc7d430e48a6247fd400a',
+           '86402c602a5c559063374a9cab9efe74', '5f2ae5d354d1d8a4439d0171866c56b7']
+    idx_2 = ['33d35788f4deebe976552e9b4bd28913']
 
     if product_id in idx:
         if product_id == idx[-1]:
@@ -154,12 +180,15 @@ async def add_product_callback_handler(query: types.CallbackQuery, callback_data
         await query.message.edit_reply_markup(reply_markup=markup)
         async with state.proxy() as data:
             data['idx'] = product_id
-
+    elif product_id in idx_2:
+        markup = garnish(product_id)
+        await query.message.edit_reply_markup(reply_markup=markup)
+        async with state.proxy() as data:
+            data['idx'] = product_id
     else:
         db.query('INSERT INTO cart VALUES (?, ?, 1, null, null, null, null, null)',
                 (query.message.chat.id, product_id))
         await query.answer('Товар добавлен в корзину!')
-
         await query.message.delete()
 
 
@@ -168,8 +197,8 @@ async def projarka_handler(query: types.CallbackQuery, callback_data: dict, stat
     async with state.proxy() as data:
         data['projarka'] = callback_data['action']
 
-    await query.answer('Выберите гарнир')
-    await query.message.edit_reply_markup(reply_markup=garnish(callback_data['id']))
+        await query.answer('Выберите гарнир')
+        await query.message.edit_reply_markup(reply_markup=garnish(callback_data['id']))
 
 
 @dp.callback_query_handler(IsUser(), garnish_cb.filter(action=['pure', 'free', 'dolki', 'kuku', 'salat']))
@@ -184,8 +213,12 @@ async def garnish_handler(query: types.CallbackQuery, callback_data: dict, state
 @dp.callback_query_handler(IsUser(), sous_cb.filter(action=['blu', 'nacos', 'meks', 'bbq', 'chili']))
 async def sauce_handler(query: types.CallbackQuery, callback_data: dict, state: FSMContext):
     async with state.proxy() as data:
-        db.query('INSERT INTO cart VALUES (?, ?, 1, ?, ?, ?, null, null)',
-                 (query.message.chat.id, data['idx'], data['projarka'], data['garnish'], callback_data['action']))
+        if data['idx'] in '33d35788f4deebe976552e9b4bd28913':
+            db.query("INSERT INTO cart VALUES (?, ?, 1, null, ?, ?, null, null)",
+                     (query.message.chat.id, data['idx'], data['garnish'], callback_data['action']))
+        else:
+            db.query('INSERT INTO cart VALUES (?, ?, 1, ?, ?, ?, null, null)',
+                    (query.message.chat.id, data['idx'], data['projarka'], data['garnish'], callback_data['action']))
 
     await query.answer('Товар добавлен в корзину!')
     await query.message.delete()
