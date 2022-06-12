@@ -32,7 +32,7 @@ def steak_text(projarka, garnish, sauce):
 def wings_text(spice, amount):
     if spice == 'not_spicy':
         spice = 'не острые'
-    elif spice == 'medium':
+    elif spice == 'medium_spice':
         spice = 'средние'
     elif spice == 'spicy':
         spice = 'острые'
@@ -68,7 +68,7 @@ async def process_cart(message: types.Message, state: FSMContext):
             data['products'] = {}
         order_cost = 0
 
-        for _, idx, count_in_cart, projarka, garnish, sauce, spice, amount in cart_data:
+        for _, idx, count_in_cart, projarka, garnish, sauce, amount, spice in cart_data:
             product = db.fetchone('SELECT * FROM products WHERE idx=?', (idx,))
             if product is None:
                 db.query('DELETE FROM cart WHERE idx=?', (idx,))
@@ -87,9 +87,9 @@ async def process_cart(message: types.Message, state: FSMContext):
 
                     price = price.split("/")
 
-                    if amount == 8:
+                    if amount == "8":
                         price = int(price[0])
-                    elif amount == 16:
+                    elif amount == "16":
                         price = int(price[1])
 
                 text += info
