@@ -141,7 +141,7 @@ async def product_callback_handler(query: CallbackQuery, callback_data: dict, st
             else:
                 data['products'][idx][2] += 1 if 'increase' == action else -1
                 count_in_cart = data['products'][idx][2]
-                if count_in_cart == 0:
+                if count_in_cart <= 0:
                     db.query('''DELETE FROM cart
                     WHERE cid = ? AND idx = ?''', (query.message.chat.id, idx))
                     await query.message.delete()
@@ -204,10 +204,10 @@ async def checkout(message, state):
 
     async with state.proxy() as data:
         for title, price, count_in_cart, info in data['products'].values():
-            tp = count_in_cart * price
-            answer += f'<b>{title}</b> * {count_in_cart}шт. = {tp}₽\n'
-            total_price += tp
-
+            if count_in_cart > 0:
+                tp = count_in_cart * price
+                answer += f'<b>{title}</b> * {count_in_cart}шт. = {tp}₽\n'
+                total_price += tp
     await message.answer(f'{answer}\nОбщая сумма заказа: {total_price}₽.',
                          reply_markup=check_markup())
 
@@ -396,11 +396,13 @@ async def process_confirm(message: Message, state: FSMContext):
             PRICE = types.LabeledPrice(label=MESSAGE['label'][0], amount=total_price)
             await bot.send_invoice(message.chat.id,
                                    title=MESSAGE['price'],
-                                   description="hello",
+                                   description="Оплата",
                                    provider_token=TOKEN_PAYMENTS,
                                    currency='rub',
                                    is_flexible=False,  # True If you need to set up Shipping Fee
                                    prices=[PRICE],
+                                   # need_phone_number=True,
+                                   # need_shipping_address=True,
                                    start_parameter='time-machine-example',
                                    payload='some-invoice-payload-for-our-internal-use')
 

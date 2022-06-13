@@ -136,7 +136,6 @@ async def add_product_callback_handler(query: types.CallbackQuery, callback_data
            '6c64de44bccc509c2c0c23cd6d2d0a0d', '988f7a785631056fb53022bca062b89d',
            '7e3db5c3c00bdb2ebd02e49214cc15f4', 'efc44a03ce222a21b93c66fa6fb489ca',
            '2097656498cb47e1ef11576e5d221ec2', '35106c4ba8cbc7d430e48a6247fd400a',
-           '86402c602a5c559063374a9cab9efe74',
            '5f2ae5d354d1d8a4439d0171866c56b7', '33d35788f4deebe976552e9b4bd28913']  # исключения
 
     if product_id in idx:
