@@ -385,43 +385,40 @@ async def process_confirm_invalid(message: Message):
 
 @dp.message_handler(IsUser(), text=confirm_message, state=CheckoutState.confirm)
 async def process_confirm(message: Message, state: FSMContext):
-    try:
-        global MESSAGE
-        total_price = 0
-        async with state.proxy() as data:
-            for title, price, count_in_cart, info in data['products'].values():
-                tp = count_in_cart * price
-                total_price += tp
-            total_price *= 100
-            PRICE = types.LabeledPrice(label=MESSAGE['label'][0], amount=total_price)
-            await bot.send_invoice(message.chat.id,
-                                   title=MESSAGE['price'],
-                                   description="Оплата",
-                                   provider_token=TOKEN_PAYMENTS,
-                                   currency='rub',
-                                   is_flexible=False,  # True If you need to set up Shipping Fee
-                                   prices=[PRICE],
-                                   # need_phone_number=True,
-                                   # need_shipping_address=True,
-                                   start_parameter='time-machine-example',
-                                   payload='some-invoice-payload-for-our-internal-use')
+    global MESSAGE
+    total_price = 0
+    async with state.proxy() as data:
+        for title, price, count_in_cart, info in data['products'].values():
+            tp = count_in_cart * price
+            total_price += tp
+        total_price *= 100
+        PRICE = types.LabeledPrice(label=MESSAGE['label'][0], amount=total_price)
+        await bot.send_invoice(message.chat.id,
+                               title=MESSAGE['price'],
+                               description="Оплата",
+                               provider_token=TOKEN_PAYMENTS,
+                               currency='rub',
+                               is_flexible=False,  # True If you need to set up Shipping Fee
+                               prices=[PRICE],
+                               # need_phone_number=True,
+                               # need_shipping_address=True,
+                               start_parameter='time-machine-example',
+                               payload='some-invoice-payload-for-our-internal-use')
 
-            cid = message.chat.id
-            products = [idx + '=' + str(quantity)
-                        for idx, quantity in db.fetchall('''SELECT idx, quantity FROM cart
+        cid = message.chat.id
+        products = [idx + '=' + str(quantity)
+                    for idx, quantity in db.fetchall('''SELECT idx, quantity FROM cart
             WHERE cid=?''', (cid,))]  # idx=quantity
-            if data['dylevery'] == samovyvoz:
-                db.query("INSERT INTO orders VALUES (?, ?, 'False,', ?, ?)",
-                         (cid, data['name'], data['phone_number'], ' '.join(products)))
-            else:
-                db.query('INSERT INTO orders VALUES (?, ?, ?, ?, ?)',
-                         (cid, data['name'], data['address'], data['phone_number'], ' '.join(products)))
+        if data['dylevery'] == samovyvoz:
+            db.query("INSERT INTO orders VALUES (?, ?, 'False,', ?, ?)",
+                     (cid, data['name'], data['phone_number'], ' '.join(products)))
+        else:
+            db.query('INSERT INTO orders VALUES (?, ?, ?, ?, ?)',
+                     (cid, data['name'], data['address'], data['phone_number'], ' '.join(products)))
 
             # db.query('DELETE FROM cart WHERE cid=?', (cid,))
 
         await CheckoutState.next()
-    except:
-        await message.answer('Что-то пошло не так. Попробуйте ещё раз.')
 
 
 @dp.message_handler(content_types=ContentType.SUCCESSFUL_PAYMENT)

@@ -39,7 +39,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
 @dp.message_handler(IsAdmin(), commands="start")
 async def cmd_start(message: types.Message):
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.row(settings, orders, questions)
+    markup.row(settings)
     await message.answer('''ВКЛЮЧЕН РЕЖИМ АДМИНИСТРАТОРА''', reply_markup=markup)
 
 
