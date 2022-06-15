@@ -4,7 +4,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import Message, ChatActions, ReplyKeyboardMarkup, CallbackQuery, \
     InlineKeyboardMarkup, InlineKeyboardButton, KeyboardButton, ContentType
-from app import cart, btnbar, btnMenu, btnTime, btnBrn, btndlv
+from app import cart, btnbar, btnMenu, btnTime, btnBrn, btndlv, sos
 from config import dp, db, bot, BRON_CHANNEL, TOKEN_PAYMENTS
 from filters import IsUser
 from hendlers.admin.add import check_markup, back_message, all_right_message, back_markup, confirm_markup, \
@@ -424,7 +424,7 @@ async def process_confirm(message: Message, state: FSMContext):
 @dp.message_handler(content_types=ContentType.SUCCESSFUL_PAYMENT)
 async def process_successful_payment(message: types.Message, state: FSMContext):
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.add(btnMenu, btnbar, btnTime).add(btnBrn, btndlv)
+    markup.add(btnMenu, btnbar, btnTime).add(btnBrn, btndlv, sos)
     pmnt = message.successful_payment.to_python()
     for key, val in pmnt.items():
         print(f'{key} = {val}')

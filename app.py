@@ -22,13 +22,14 @@ btnTime = "🕗 РЕЖИМ РАБОТЫ"
 btnbar = "🍾 БАР"
 btndlv = "🎒 ДОСТАВКА"
 orders = '🚚 Заказы'
+sos = "? ПОМОЩЬ"
 
 
 @dp.message_handler(IsUser(), commands="start", state="*")
 async def cmd_start(message: types.Message, state: FSMContext):
     await state.finish()
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.row(btnMenu, btnbar, btnTime).add(btnBrn, btndlv)
+    markup.row(btnMenu, btnbar, btnTime).add(btnBrn, btndlv, sos)
     await message.answer('ДОБРО ПОЖАЛОВАТЬ, {0.first_name}\n'
                          'Я Ваш личный бот, помощник.\n'
                          'Я помогу Вам ознакомиться с меню, режимом работы ресторана и '

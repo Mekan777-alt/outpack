@@ -2,7 +2,9 @@ from config import dp, bot
 from aiogram import types
 from aiogram.types import ReplyKeyboardMarkup
 from filters import IsUser
-from app import btnMenu, btnbar, btnTime, btnBrn, btndlv, cart
+from app import btnMenu, btnbar, btnTime, btnBrn, btndlv, sos
+from aiogram.dispatcher import FSMContext
+
 
 """btn_bar"""
 btnvin_po_bakal = "🍾 АПЕРЕТИВ"
@@ -96,10 +98,11 @@ async def btn_des(message: types.Message):
 
 
 @dp.message_handler(IsUser(), text=btnnaz)
-async def btn_naz(message: types.Message):
+async def btn_naz(message: types.Message, state: FSMContext):
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.row(btnMenu, btnbar, btnTime).add(btnBrn, btndlv)
+    markup.row(btnMenu, btnbar, btnTime).add(btnBrn, btndlv, sos)
     await message.answer("ПЕРЕХОД НА ГЛАВНОЕ МЕНЮ", reply_markup=markup)
+    await state.finish()
 
 
 """handler_bar"""

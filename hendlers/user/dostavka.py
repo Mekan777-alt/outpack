@@ -118,6 +118,11 @@ async def menu(message: types.Message):
     await message.answer("ВЫБЕРИТЕ РАЗДЕЛ", reply_markup=categories_markup())
 
 
+@dp.message_handler(IsUser(), text=btn_instr)
+async def instr_procces(message: types.Message):
+    await message.answer("https://telegra.ph/Instrukciya-06-10-7", reply_markup=dyl_markup())
+
+
 @dp.callback_query_handler(IsUser(), category_cb.filter(action='view'))
 async def category_callback_handler(query: types.CallbackQuery, callback_data: dict):
     products = db.fetchall('''SELECT * FROM products

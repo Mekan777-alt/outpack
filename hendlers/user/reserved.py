@@ -1,4 +1,3 @@
-import json
 from datetime import timedelta, date, datetime
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import StatesGroup, State
@@ -6,7 +5,7 @@ from config import dp, bot, BRON_CHANNEL
 from aiogram import types
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ContentType
 from filters import IsUser
-from app import btnBrn, btnMenu, btnbar, btnTime, btndlv, cart
+from app import btnBrn, btnMenu, btnbar, btnTime, btndlv, sos
 from aiogram.types import ContentType
 
 b51 = KeyboardButton("❌ НЕТ")
@@ -163,7 +162,7 @@ async def procces_phone(message: types.Message, state: FSMContext):
 async def cencel_message(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         markup = ReplyKeyboardMarkup(resize_keyboard=True)
-        markup.row(btnMenu, btnbar, btnTime).add(btnBrn, btndlv)
+        markup.row(btnMenu, btnbar, btnTime).add(btnBrn, btndlv, sos)
         await message.reply("Бронь принята\n"
                             "Ожидайте подтверждения", reply_markup=markup)
         await bot.send_message(BRON_CHANNEL, f"Бронь\n"
