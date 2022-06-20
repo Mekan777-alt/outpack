@@ -178,7 +178,7 @@ MESSAGE = {
 @dp.message_handler(IsUser(), text="🗑 Очистить корзину")
 async def delete_cart(message: types.Message):
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.row(btnMenu, btnbar, btnTime).add(btnBrn, btndlv)
+    markup.row(btnMenu, btnbar, btnTime).add(btnBrn, btndlv, sos)
     db.query("""DELETE FROM cart WHERE cid=?""", (message.chat.id,))
     await message.answer("Готово", reply_markup=markup)
 
