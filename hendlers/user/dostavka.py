@@ -110,7 +110,7 @@ def dyl_markup():
 
 @dp.message_handler(IsUser(), text=btndlv)
 async def dyl_start(message: types.Message):
-    await message.answer("Минимальная сумма заказа 1500 рублей", reply_markup=dyl_markup())
+    await message.answer("Минимальная сумма заказа 2000 рублей", reply_markup=dyl_markup())
     await message.answer("ВЫБЕРИТЕ РАЗДЕЛ", reply_markup=categories_markup())
 
 
@@ -196,9 +196,9 @@ async def sauce_handler(query: types.CallbackQuery, callback_data: dict, state: 
         product_id = callback_data['id']
         db.query('INSERT INTO cart VALUES (?, ?, 1, ?, ?, ?, null, null)',
                 (query.message.chat.id, product_id, data[product_id]['projarka'], data[product_id]['garnish'], callback_data['action']))
-
     await query.answer('Товар добавлен в корзину!')
-    await query.message.delete()
+    price = db.fetchone("SELECT price FROM products WHERE idx=?", (product_id,))
+    await query.message.edit_reply_markup(reply_markup=product_markup(product_id, price[0]))
 
 
 @dp.callback_query_handler(IsUser(), kryl_cb.filter(action=['8', '16']))
@@ -218,7 +218,8 @@ async def spice_handler(query: types.CallbackQuery, callback_data: dict, state: 
                  (query.message.chat.id, product_id, data[product_id]['amount'], callback_data['action']))
 
     await query.answer('Товар добавлен в корзину!')
-    await query.message.delete()
+    price = db.fetchone("SELECT price FROM products WHERE idx=?", (product_id,))
+    await query.message.edit_reply_markup(reply_markup=product_markup(product_id, price[0]))
 
 
 async def show_products(m, products):

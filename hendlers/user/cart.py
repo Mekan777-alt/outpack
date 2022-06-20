@@ -190,8 +190,8 @@ async def process_checkout(message: Message, state: FSMContext):
         for title, price, count_in_cart, info in data['products'].values():
             tp = count_in_cart * price
             total_price += tp
-        if total_price < 1500:
-            await message.answer(f"Закажите ещё на {1500 - total_price} рублей чтобы совершить заказ")
+        if total_price < 2000:
+            await message.answer(f"Закажите ещё на {2000 - total_price} рублей чтобы совершить заказ")
         else:
             await CheckoutState.check_cart.set()
             await checkout(message, state)
@@ -235,7 +235,8 @@ async def chek_dyl(message: types.Message, state: FSMContext):
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add(dostavka, samovyvoz).add(back_message)
     await CheckoutState.next()
-    await message.answer("Укажите вариант доставки", reply_markup=markup)
+    await message.answer("Укажите вариант доставки\n"
+                         "ДОСТАВКА ОСУЩЕСТВЛЯЕТСЯ ТОЛЬКО ПО Г.КАЗАНЬ", reply_markup=markup)
 
 
 @dp.message_handler(IsUser(), text=back_message, state=CheckoutState.dylevery)
