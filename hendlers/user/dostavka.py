@@ -8,6 +8,7 @@ from hendlers.user.catalog import btnnaz
 from aiogram.dispatcher import FSMContext
 
 btn_instr = "⚙️ ИНСТРУКЦИЯ"
+pay = "💳 СПОСОБ ОПЛАТЫ"
 
 projarkas = {"blue_rare": "Blue rare", "medium_rare": "Medium rare", "medium": "Medium", "medium_well": "Medium well", "well_done": "Well done"}
 garnishs = {"pure": "Картофельное пюре", "free": "Картофель фри", "dolki": "Картофельные дольки", "kuku": "Початок кукурузы (150 гр.)", "salat": "Свежий салатик (150 гр.)"}
@@ -102,7 +103,7 @@ def categories_markup():
 def dyl_markup():
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add('📖 Меню')
-    markup.add(btn_instr)
+    markup.add(btn_instr, pay)
     markup.add(btnnaz, cart)
     return markup
 
@@ -116,6 +117,11 @@ async def dyl_start(message: types.Message):
 @dp.message_handler(IsUser(), text='📖 Меню')
 async def menu(message: types.Message):
     await message.answer("ВЫБЕРИТЕ РАЗДЕЛ", reply_markup=categories_markup())
+
+
+@dp.message_handler(IsUser(), text=pay)
+async def pay_command(message: types.Message):
+    await message.answer("https://telegra.ph/SPOSOB-OPLATY-06-17", reply_markup=dyl_markup())
 
 
 @dp.message_handler(IsUser(), text=btn_instr)

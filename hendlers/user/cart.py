@@ -392,7 +392,7 @@ async def process_confirm(message: Message, state: FSMContext):
             tp = count_in_cart * price
             total_price += tp
         total_price *= 100
-        PRICE = types.LabeledPrice(label=MESSAGE['label'][0], amount=total_price)
+        PRICE = types.LabeledPrice(label=MESSAGE['price'], amount=total_price)
         await bot.send_invoice(message.chat.id,
                                title=MESSAGE['price'],
                                description="Оплата",
@@ -400,8 +400,8 @@ async def process_confirm(message: Message, state: FSMContext):
                                currency='rub',
                                is_flexible=False,  # True If you need to set up Shipping Fee
                                prices=[PRICE],
-                               # need_phone_number=True,
-                               # need_shipping_address=True,
+                               need_phone_number=False,
+                               need_shipping_address=False,
                                start_parameter='time-machine-example',
                                payload='some-invoice-payload-for-our-internal-use')
 
