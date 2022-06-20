@@ -236,7 +236,7 @@ async def chek_dyl(message: types.Message, state: FSMContext):
     markup.add(dostavka, samovyvoz).add(back_message)
     await CheckoutState.next()
     await message.answer("Укажите вариант доставки\n"
-                         "ДОСТАВКА ОСУЩЕСТВЛЯЕТСЯ ТОЛЬКО ПО Г.КАЗАНЬ", reply_markup=markup)
+                         "ДОСТАВКА ОСУЩЕСТВЛЯЕТСЯ ТОЛЬКО ПО г.КАЗАНЬ", reply_markup=markup)
 
 
 @dp.message_handler(IsUser(), text=back_message, state=CheckoutState.dylevery)
