@@ -115,7 +115,7 @@ async def process_cart(message: types.Message, state: FSMContext):
             markup.add('📦 Оформить заказ', "🗑 Очистить корзину").add(back)
 
             await message.answer('Отличный выбор, теперь эти блюда в корзине.\n'
-                                 'Нажми на кнопки оформить заказ или назад',
+                                 'Нажмите на кнопки оформить заказ или назад',
                                  reply_markup=markup)
 
 
@@ -287,7 +287,7 @@ async def process_name(message: Message, state: FSMContext):
 
         if data['dylevery'] == samovyvoz:
             await CheckoutState.phone_number.set()
-            await message.answer("Так, теперь мне нужен твой номер телефона.\n"
+            await message.answer("Так, теперь мне нужен Ваш номер телефона.\n"
                                  "Исключительно в деловых целях 🙂", reply_markup=send_phone)
         # if 'address' in data.keys():
         #
@@ -295,7 +295,12 @@ async def process_name(message: Message, state: FSMContext):
         #     await CheckoutState.confirm.set()
 
         else:
-            await message.answer('Укажите адрес доставки', reply_markup=back_markup())
+            await message.answer('Укажите адрес доставки:\n'
+                                 '1. Название улицы\n'
+                                 '2. Номер подъезда\n'
+                                 '3. Этаж\n'
+                                 '4. Квартира/офис\n'
+                                 '5. Код домофона', reply_markup=back_markup())
             await CheckoutState.next()
 
 
@@ -319,7 +324,7 @@ async def process_address(message: Message, state: FSMContext):
 
         # await confirm(message)
         await CheckoutState.next()
-        await message.answer("Так, теперь мне нужен твой номер телефона.\n"
+        await message.answer("Так, теперь мне нужен Ваш номер телефона.\n"
                              "Исключительно в деловых целях 🙂", reply_markup=send_phone)
 
 

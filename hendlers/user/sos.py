@@ -26,12 +26,12 @@ async def command_start(message: Message):
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add(message_to, phone)
     markup.add(btnnaz)
-    await message.answer("Как хотите с нами связаться", reply_markup=markup)
+    await message.answer("Выберите способ", reply_markup=markup)
 
 
 @dp.message_handler(IsUser(), text=phone)
 async def command_phone(message: Message):
-    await message.answer("Свяжитесь пожалуйста с нами по номеру телефона\n"
+    await message.answer("Пожалуйста свяжитесь с нами по номеру телефона\n"
                          "+7 (843) 266‒11‒11")
 
 
