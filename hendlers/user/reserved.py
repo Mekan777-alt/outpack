@@ -163,14 +163,15 @@ async def cencel_message(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         markup = ReplyKeyboardMarkup(resize_keyboard=True)
         markup.row(btnMenu, btnbar, btnTime).add(btnBrn, btndlv, sos)
-        await message.reply("Бронь принята\n"
-                            "Ожидайте подтверждения", reply_markup=markup)
+
         await bot.send_message(BRON_CHANNEL, f"Бронь\n"
                                              f"Ф.И.О: {data['name']}\n"
                                              f"Время: {data['people']}\n"
                                              f"Дата: {data['time']}\n"
                                              f"Кол-во гостей: {data['date']}\n"
                                              f"Номер телефона: {data['phone_number']}")
+        await message.reply("Бронь принята\n"
+                            "Ожидайте подтверждения", reply_markup=markup)
     await state.finish()
 
 

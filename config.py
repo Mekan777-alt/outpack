@@ -6,9 +6,12 @@ from data.database import Database
 
 loop = asyncio.get_event_loop()
 ADMINS = []#[5443287345]#[337708421]
-TOKEN = "5153177753:AAGN27mmyBzn_nDbc3Wqx7TJwYIG2UQdBMs"
-TOKEN_PAYMENTS = "401643678:TEST:2a495ef0-26a1-4053-b3d5-c149e1f682ce"
-BRON_CHANNEL = "@main_test12"
+TOKEN = "5286546614:AAEGjGi5elS1quZcfopurzE2-gYPYisubf4"
+TOKEN_PAYMENTS = "401643678:TEST:ea70bc5e-ba80-4990-89ab-c097e808da98"
+DELIVERY_CHAT = "-661196706"
+SUPPORT_CHAT = "-760076942"
+BRON_CHANNEL = "-1001774409771"
+
 storage = MemoryStorage()
 
 path = os.getcwd() + "/data/database.db"

@@ -5,7 +5,7 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import Message, ChatActions, ReplyKeyboardMarkup, CallbackQuery, \
     InlineKeyboardMarkup, InlineKeyboardButton, KeyboardButton, ContentType
 from app import cart, btnbar, btnMenu, btnTime, btnBrn, btndlv, sos
-from config import dp, db, bot, BRON_CHANNEL, TOKEN_PAYMENTS
+from config import dp, db, bot, DELIVERY_CHAT, TOKEN_PAYMENTS
 from filters import IsUser
 from hendlers.admin.add import check_markup, back_message, all_right_message, back_markup, confirm_markup, \
     confirm_message, back
@@ -338,6 +338,9 @@ async def process_address(message: Message, state: FSMContext):
 
 @dp.message_handler(IsUser(), state=CheckoutState.phone_number)
 async def process_phone_number(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['phone_number'] = message.text
+
     await CheckoutState.next()
     await confirm(message, state, message.text)
 
@@ -454,7 +457,7 @@ async def process_successful_payment(message: types.Message, state: FSMContext):
         else:
             variant = "Самовывоз"
 
-        await bot.send_message(BRON_CHANNEL, f"<b>{variant}</b>\n\n"
+        await bot.send_message(DELIVERY_CHAT, f"<b>{variant}</b>\n\n"
                                              f"Имя получателя: {data['name']}\n"
                                              f"Время: {now.hour}:{now.minute}\n"
                                              f"Дата: {now.date().strftime('%d-%m-%y')}\n"

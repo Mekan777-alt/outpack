@@ -1,5 +1,5 @@
 from aiogram.dispatcher.filters.state import StatesGroup, State
-from config import bot, dp, db, BRON_CHANNEL
+from config import bot, dp, db, SUPPORT_CHAT
 from aiogram.dispatcher import FSMContext
 from aiogram.types import ReplyKeyboardMarkup, ReplyKeyboardRemove
 from hendlers.admin.add import submit_markup, all_right_message, cancel_message
@@ -101,7 +101,7 @@ async def process_submit(message: Message, state: FSMContext):
         markup.add(btnMenu, btnbar, btnTime)
         markup.add(btnBrn, btndlv, sos)
         await message.answer('Отправлено!', reply_markup=markup)
-        await bot.send_message(BRON_CHANNEL, "SOS\n"
+        await bot.send_message(SUPPORT_CHAT, "SOS\n"
                                              "\n"
                                              f"Вопрос: {data['question']}\n"
                                              f"Номер телефона отправителя: {data['phone_number']}")
