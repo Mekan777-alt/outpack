@@ -1,5 +1,5 @@
 from aiogram.dispatcher.filters.state import StatesGroup, State
-from app import questions, settings, orders
+from app import questions, settings_catalogue, orders
 from aiogram.dispatcher import FSMContext
 from aiogram.utils.callback_data import CallbackData
 from hendlers.admin.add import all_right_message, cancel_message, submit_markup, delete_category, back
@@ -63,7 +63,7 @@ async def process_send_answer(message: Message, state: FSMContext):
 
     async with state.proxy() as data:
         markup = ReplyKeyboardMarkup(resize_keyboard=True)
-        markup.add(settings)
+        markup.add(settings_catalogue)
         markup.add(orders)
         markup.add(questions)
         answer = data['answer']

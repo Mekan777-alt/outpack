@@ -12,7 +12,8 @@ filters.setup(dp)
 
 cart = '🛒 Перейти в Корзину'
 balance = '💰 Баланс'
-settings = '⚙️ Настройка каталога'
+settings_catalogue = '⚙️ Настройка каталога'
+settings_regime = '⚙️ Настройка режима'
 questions = '❓ Вопросы'
 add_product = '➕ Добавить товар'
 delete_product = '🗑️ Удалить товар'
@@ -40,7 +41,8 @@ async def cmd_start(message: types.Message, state: FSMContext):
 @dp.message_handler(IsAdmin(), commands="start")
 async def cmd_start(message: types.Message):
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.row(settings)
+    markup.add(settings_regime)
+    markup.add(settings_catalogue)
     await message.answer('''ВКЛЮЧЕН РЕЖИМ АДМИНИСТРАТОРА''', reply_markup=markup)
 
 

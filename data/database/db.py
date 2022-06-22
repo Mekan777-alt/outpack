@@ -18,6 +18,7 @@ class Database(object):
         self.query('CREATE TABLE IF NOT EXISTS cart (cid int, idx text, quantity int, comment text, garnish text, sauce text, degree text, spice text, amount int)')
         self.query('CREATE TABLE IF NOT EXISTS wallet (cid int, balance real)')
         self.query('CREATE TABLE IF NOT EXISTS questions (cid int, question text)')
+        self.query('CREATE TABLE IF NOT EXISTS regime (bron int, delivery int, pickup int)')
 
     def query(self, arg, values=None):
         if values is None:

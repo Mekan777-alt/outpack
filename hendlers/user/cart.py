@@ -244,25 +244,23 @@ async def process_check_cart_back(message: types.Message, state: FSMContext):
     await process_checkout(message, state)
 
 
-@dp.message_handler(IsUser(), text=dostavka, state=CheckoutState.dylevery)
+@dp.message_handler(IsUser(), text=[dostavka, samovyvoz], state=CheckoutState.dylevery)
 async def dylevery(message: types.Message, state: FSMContext):
-    async with state.proxy() as data:
-        data['dylevery'] = message.text
-        await CheckoutState.next()
-        await message.answer('Укажите свое имя.',
-                             reply_markup=back_markup())
-        # await confirm(message, state)
+    is_allowed = db.fetchall('SELECT * FROM regime')
+    if message.text == dostavka:
+        list_id = 1
+    else:
+        list_id = 2
 
-
-@dp.message_handler(IsUser(), text=samovyvoz, state=CheckoutState.dylevery)
-async def dylevery(message: types.Message, state: FSMContext):
-    async with state.proxy() as data:
-        data['dylevery'] = message.text
-        await CheckoutState.next()
-        await message.answer('Укажите свое имя.',
-                             reply_markup=back_markup())
-        # await confirm(message, state)
-
+    if is_allowed[0][list_id] == 1:
+        async with state.proxy() as data:
+            data['dylevery'] = message.text
+            await CheckoutState.next()
+            await message.answer('Укажите свое имя.',
+                                 reply_markup=back_markup())
+            # await confirm(message, state)
+    else:
+        await message.answer("Приносим извинения, на данный момент этот вариант доставки не доступен.")
 
 @dp.message_handler(IsUser(), text=back_message, state=CheckoutState.address)
 async def process_address_back(message: Message, state: FSMContext):

@@ -5,7 +5,7 @@ from aiogram.utils.callback_data import CallbackData
 from config import dp, db, bot
 from aiogram import types
 from filters import IsAdmin
-from app import add_product, delete_product, settings
+from app import add_product, delete_product, settings_catalogue, settings_regime
 from aiogram.types import ReplyKeyboardMarkup, ReplyKeyboardRemove, ContentType, CallbackQuery, InlineKeyboardButton, \
     InlineKeyboardMarkup, ChatActions
 
@@ -53,8 +53,8 @@ product_cb = CallbackData('product', 'id', 'action')
 delete_category = '🗑️ Удалить категорию'
 
 
-@dp.message_handler(IsAdmin(), text=settings)
-async def process_settings(message: types.Message):
+@dp.message_handler(IsAdmin(), text=settings_catalogue)
+async def process_catalogue(message: types.Message):
 
     markup = InlineKeyboardMarkup()
 
@@ -67,6 +67,50 @@ async def process_settings(message: types.Message):
         '+ Добавить категорию', callback_data='add_category'))
 
     await message.answer('Настройка категорий:', reply_markup=markup)
+
+
+@dp.message_handler(IsAdmin(), text=settings_regime)
+async def process_regime(message: types.Message, edit=None):
+    regime = db.fetchall('SELECT * FROM regime')[0]
+    action = ['БРОНЬ ', 'ДОСТАВКА ', 'САМОВЫВОЗ ']
+    markup = InlineKeyboardMarkup()
+
+    for idx, item in enumerate(regime):
+        if item == 1:
+            allowed = '✅'
+        else:
+            allowed = '❌'
+
+        markup.add(InlineKeyboardButton(f"{action[idx]}{allowed}", callback_data=f"change_{idx}"))
+
+    if edit:
+        await message.edit_reply_markup(reply_markup=markup)
+    else:
+        await message.answer('Настройка режима:', reply_markup=markup)
+
+
+@dp.callback_query_handler(IsAdmin(), text_contains="change_")
+async def regime_callback_handler(query: CallbackQuery):
+    regime = db.fetchall('SELECT * FROM regime')[0]
+    column_id = int(query.data[7:])
+    column = ""
+
+    if column_id == 0:
+        column = "bron"
+    elif column_id == 1:
+        column = "delivery"
+    elif column_id == 2:
+        column = "pickup"
+
+    change_value = regime[column_id]
+    if change_value == 1:
+        to_change = 0
+    else:
+        to_change = 1
+
+    db.query(f'''UPDATE regime SET {column} = {to_change}''')
+    await process_regime(query.message, edit=True)
+    await query.answer("Настройки обновлены!")
 
 
 @dp.callback_query_handler(IsAdmin(), category_cb.filter(action='view'))
@@ -105,7 +149,7 @@ async def set_category_title_handler(message: types.Message, state: FSMContext):
     db.query('INSERT INTO categories VALUES (?, ?)', (idx, category))
 
     await state.finish()
-    await process_settings(message)
+    await process_catalogue(message)
 
 
 @dp.message_handler(IsAdmin(), text=delete_category)
@@ -122,7 +166,7 @@ async def delete_category_handler(message: types.Message, state: FSMContext):
             db.query('DELETE FROM categories WHERE idx=?', (idx,))
 
             await message.answer('Готово!', reply_markup=ReplyKeyboardRemove())
-            await process_settings(message)
+            await process_catalogue(message)
 
 """add product"""
 
@@ -131,7 +175,7 @@ async def delete_category_handler(message: types.Message, state: FSMContext):
 async def vack_menu(message: types.Message):
     markup = ReplyKeyboardRemove()
     await message.answer("Переход на настройки категории", reply_markup=markup)
-    await process_settings(message)
+    await process_catalogue(message)
 
 
 class ProductState(StatesGroup):
@@ -157,7 +201,7 @@ async def process_cancel(message: types.Message, state: FSMContext):
     await message.answer('Ок, отменено!', reply_markup=ReplyKeyboardRemove())
     await state.finish()
 
-    await process_settings(message)
+    await process_catalogue(message)
 
 
 @dp.message_handler(IsAdmin(), text=back_message, state=ProductState.title)
@@ -282,7 +326,7 @@ async def process_confirm(message: types.Message, state: FSMContext):
 
     await state.finish()
     await message.answer('Готово!', reply_markup=ReplyKeyboardRemove())
-    await process_settings(message)
+    await process_catalogue(message)
 
 
 @dp.callback_query_handler(IsAdmin(), product_cb.filter(action='delete'))

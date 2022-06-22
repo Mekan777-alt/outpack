@@ -1,7 +1,7 @@
 from datetime import timedelta, date, datetime
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import StatesGroup, State
-from config import dp, bot, BRON_CHANNEL
+from config import dp, bot, BRON_CHANNEL, db
 from aiogram import types
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ContentType
 from filters import IsUser
@@ -92,10 +92,15 @@ class FSMbron(StatesGroup):
 
 @dp.message_handler(IsUser(), text=btnBrn, state=None)
 async def cmd_start(message: types.Message):
-    markup = ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.row(b53)
-    await FSMbron.name.set()
-    await message.answer('👤 На чье имя бронируем стол?', reply_markup=markup)
+    is_allowed = db.fetchall('SELECT * FROM regime')
+
+    if is_allowed[0][0] == 1:
+        markup = ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.row(b53)
+        await FSMbron.name.set()
+        await message.answer('👤 На чье имя бронируем стол?', reply_markup=markup)
+    else:
+        await message.answer('Приносим извинения, на данный момент бронь отменена.')
 
 
 @dp.message_handler(IsUser(), state=FSMbron.name)
