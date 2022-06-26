@@ -110,8 +110,13 @@ def dyl_markup():
 
 @dp.message_handler(IsUser(), text=btndlv)
 async def dyl_start(message: types.Message):
-    await message.answer("Минимальная сумма заказа 2000 рублей", reply_markup=dyl_markup())
-    await message.answer("ВЫБЕРИТЕ РАЗДЕЛ", reply_markup=categories_markup())
+    is_allowed = db.fetchall('SELECT * FROM regime')
+
+    if is_allowed[0][1] == 1:
+        await message.answer("Минимальная сумма заказа 2000 рублей", reply_markup=dyl_markup())
+        await message.answer("ВЫБЕРИТЕ РАЗДЕЛ", reply_markup=categories_markup())
+    else:
+        await message.answer("Приносим извинения, на данный момент доставка не доступна")
 
 
 @dp.message_handler(IsUser(), text='📖 Меню')

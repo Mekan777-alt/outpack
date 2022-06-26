@@ -58,65 +58,70 @@ def product_markup_2(idx, count):
 
 @dp.message_handler(IsUser(), text=cart)
 async def process_cart(message: types.Message, state: FSMContext):
-    cart_data = db.fetchall(
-        'SELECT * FROM cart WHERE cid=?', (message.chat.id,))
-    if len(cart_data) == 0:
-        await message.answer('Ваша корзина пуста.')
-    else:
-        await bot.send_chat_action(message.chat.id, ChatActions.TYPING)
-        async with state.proxy() as data:
-            data['products'] = {}
-        order_cost = 0
+    is_allowed = db.fetchall('SELECT * FROM regime')
 
-        for _, idx, count_in_cart, projarka, garnish, sauce, amount, spice in cart_data:
-            product = db.fetchone('SELECT * FROM products WHERE idx=?', (idx,))
-            if product is None:
-                db.query('DELETE FROM cart WHERE idx=?', (idx,))
-            else:
-                _, title, body, image, price, _ = product
+    if is_allowed[0][1] == 1:
+        cart_data = db.fetchall(
+            'SELECT * FROM cart WHERE cid=?', (message.chat.id,))
+        if len(cart_data) == 0:
+            await message.answer('Ваша корзина пуста.')
+        else:
+            await bot.send_chat_action(message.chat.id, ChatActions.TYPING)
+            async with state.proxy() as data:
+                data['products'] = {}
+            order_cost = 0
 
-                markup = product_markup_2(idx, count_in_cart)
-                text = f'<b>{title}</b>\n'
-                info = ""
-
-                if projarka:
-                    info = steak_text(projarka, garnish, sauce)
-
-                elif spice:
-                    info = wings_text(spice, amount)
-
-                    price = price.split("/")
-
-                    if amount == "8":
-                        price = int(price[0])
-                    elif amount == "16":
-                        price = int(price[1])
-
-                text += info
-
-                text += f"\n\n\nЦена: {price}₽."
-
-                if image:
-                    await message.answer_photo(photo=image,
-                                               caption=text,
-                                               reply_markup=markup)
+            for _, idx, count_in_cart, projarka, garnish, sauce, amount, spice in cart_data:
+                product = db.fetchone('SELECT * FROM products WHERE idx=?', (idx,))
+                if product is None:
+                    db.query('DELETE FROM cart WHERE idx=?', (idx,))
                 else:
-                    await message.answer(text=text, reply_markup=markup)
+                    _, title, body, image, price, _ = product
 
-                order_cost += price
-                async with state.proxy() as data:
-                    if data['products'].get(idx):
-                        idx += "2"
+                    markup = product_markup_2(idx, count_in_cart)
+                    text = f'<b>{title}</b>\n'
+                    info = ""
 
-                    data['products'][idx] = [title, price, count_in_cart, info]
+                    if projarka:
+                        info = steak_text(projarka, garnish, sauce)
 
-        if order_cost != 0:
-            markup = ReplyKeyboardMarkup(resize_keyboard=True, selective=True)
-            markup.add('📦 Оформить заказ', "🗑 Очистить корзину").add(back)
+                    elif spice:
+                        info = wings_text(spice, amount)
 
-            await message.answer('Отличный выбор, теперь эти блюда в корзине.\n'
-                                 'Нажмите на кнопки оформить заказ или назад',
-                                 reply_markup=markup)
+                        price = price.split("/")
+
+                        if amount == "8":
+                            price = int(price[0])
+                        elif amount == "16":
+                            price = int(price[1])
+
+                    text += info
+
+                    text += f"\n\n\nЦена: {price}₽."
+
+                    if image:
+                        await message.answer_photo(photo=image,
+                                                   caption=text,
+                                                   reply_markup=markup)
+                    else:
+                        await message.answer(text=text, reply_markup=markup)
+
+                    order_cost += price
+                    async with state.proxy() as data:
+                        if data['products'].get(idx):
+                            idx += "2"
+
+                        data['products'][idx] = [title, price, count_in_cart, info]
+
+            if order_cost != 0:
+                markup = ReplyKeyboardMarkup(resize_keyboard=True, selective=True)
+                markup.add('📦 Оформить заказ', "🗑 Очистить корзину").add(back)
+
+                await message.answer('Отличный выбор, теперь эти блюда в корзине.\n'
+                                     'Нажмите на кнопки оформить заказ или назад',
+                                     reply_markup=markup)
+    else:
+        await message.answer("Приносим извинения, на данный момент доставка не доступна")
 
 
 @dp.message_handler(IsUser(), text=back)
@@ -246,21 +251,13 @@ async def process_check_cart_back(message: types.Message, state: FSMContext):
 
 @dp.message_handler(IsUser(), text=[dostavka, samovyvoz], state=CheckoutState.dylevery)
 async def dylevery(message: types.Message, state: FSMContext):
-    is_allowed = db.fetchall('SELECT * FROM regime')
-    if message.text == dostavka:
-        list_id = 1
-    else:
-        list_id = 2
+    async with state.proxy() as data:
+        data['dylevery'] = message.text
+        await CheckoutState.next()
+        await message.answer('Укажите свое имя.',
+                             reply_markup=back_markup())
+        # await confirm(message, state)
 
-    if is_allowed[0][list_id] == 1:
-        async with state.proxy() as data:
-            data['dylevery'] = message.text
-            await CheckoutState.next()
-            await message.answer('Укажите свое имя.',
-                                 reply_markup=back_markup())
-            # await confirm(message, state)
-    else:
-        await message.answer("Приносим извинения, на данный момент этот вариант доставки не доступен.")
 
 @dp.message_handler(IsUser(), text=back_message, state=CheckoutState.address)
 async def process_address_back(message: Message, state: FSMContext):

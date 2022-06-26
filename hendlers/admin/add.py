@@ -161,7 +161,7 @@ async def process_catalogue(message: types.Message):
 @dp.message_handler(IsAdmin(), text=settings_regime)
 async def process_regime(message: types.Message, edit=None):
     regime = db.fetchall('SELECT * FROM regime')[0]
-    action = ['БРОНЬ ', 'ДОСТАВКА ', 'САМОВЫВОЗ ']
+    action = ['БРОНЬ ', 'ДОСТАВКА ']
     markup = InlineKeyboardMarkup()
 
     for idx, item in enumerate(regime):
@@ -188,8 +188,6 @@ async def regime_callback_handler(query: CallbackQuery):
         column = "bron"
     elif column_id == 1:
         column = "delivery"
-    elif column_id == 2:
-        column = "pickup"
 
     change_value = regime[column_id]
     if change_value == 1:

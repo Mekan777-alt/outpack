@@ -47,33 +47,6 @@ async def cmd_start(message: types.Message):
     markup.add(start_stop)
     await message.answer('''ВКЛЮЧЕН РЕЖИМ АДМИНИСТРАТОРА''', reply_markup=markup)
 
-login = 'romein'
-password = '123'
-
-
-@dp.message_handler(commands='admin')
-async def admin_commands(message: types.Message):
-    await message.answer("Логин:")
-
-
-@dp.message_handler(text=login)
-async def check_login(message: types.Message):
-    await message.answer("Пароль:")
-
-
-@dp.message_handler(text=password)
-async def check_password(message: types.Message):
-    markup = ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.add(settings_regime)
-    # markup.add(settings_catalogue)
-    markup.add(start_stop)
-    await message.answer('''ВКЛЮЧЕН РЕЖИМ АДМИНИСТРАТОРА''', reply_markup=markup)
-
-
-@dp.message_handler(lambda message: message.text not in [login, password])
-async def check(message: types.Message):
-    await message.answer("Не верный логин или пароль")
-
 
 async def on_startup(dp):
     logging.basicConfig(level=logging.INFO)
