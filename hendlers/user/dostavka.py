@@ -134,9 +134,9 @@ async def category_callback_handler(query: types.CallbackQuery, callback_data: d
     products = db.fetchall('''SELECT * FROM products
     WHERE products.tag = (SELECT title FROM categories WHERE idx=?)''',
                            (callback_data['id'],))
-
+    status = db.fetchall("SELECT * FROM status")
     # await query.answer('Все доступные товары.')
-    await show_products(query.message, products)
+    await show_products(query.message, products, status)
 
 
 @dp.callback_query_handler(IsUser(), product_cb.filter(action='add'))
@@ -222,20 +222,20 @@ async def spice_handler(query: types.CallbackQuery, callback_data: dict, state: 
     await query.message.edit_reply_markup(reply_markup=product_markup(product_id, price[0]))
 
 
-async def show_products(m, products):
+async def show_products(m, products, status):
     if len(products) == 0:
-
         await m.answer('Здесь ничего нет 😢')
-    else:
 
         await bot.send_chat_action(m.chat.id, ChatActions.TYPING)
-
+    else:
         for idx, title, body, image, price, _ in products:
-            markup = product_markup(idx, price)
-            text = f'<b>{title}</b>\n\n{body}'
-            if image:
-                await m.answer_photo(photo=image,
-                                     caption=text,
-                                     reply_markup=markup)
-            else:
-                await m.answer(text=text, reply_markup=markup)
+            for id, stat in status:
+                if idx in id and stat in 'start':
+                    markup = product_markup(idx, price)
+                    text = f'<b>{title}</b>\n\n{body}'
+                    if image:
+                        await m.answer_photo(photo=image,
+                                             caption=text,
+                                             reply_markup=markup)
+                    else:
+                        await m.answer(text=text, reply_markup=markup)

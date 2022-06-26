@@ -24,6 +24,7 @@ btnbar = "🍾 БАР"
 btndlv = "🎒 ДОСТАВКА"
 orders = '🚚 Заказы'
 sos = "? ПОМОЩЬ"
+start_stop = "⚙ Старт/Стоп Блюд"
 
 
 @dp.message_handler(IsUser(), commands="start", state="*")
@@ -42,7 +43,8 @@ async def cmd_start(message: types.Message, state: FSMContext):
 async def cmd_start(message: types.Message):
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add(settings_regime)
-    markup.add(settings_catalogue)
+    #markup.add(settings_catalogue)
+    markup.add(start_stop)
     await message.answer('''ВКЛЮЧЕН РЕЖИМ АДМИНИСТРАТОРА''', reply_markup=markup)
 
 

@@ -5,7 +5,7 @@ from aiogram.utils.callback_data import CallbackData
 from config import dp, db, bot
 from aiogram import types
 from filters import IsAdmin
-from app import add_product, delete_product, settings_catalogue, settings_regime
+from app import add_product, delete_product, settings_catalogue, settings_regime, start_stop
 from aiogram.types import ReplyKeyboardMarkup, ReplyKeyboardRemove, ContentType, CallbackQuery, InlineKeyboardButton, \
     InlineKeyboardMarkup, ChatActions
 
@@ -15,6 +15,22 @@ back_message = '👈 Назад'
 back = '👈 Назад'
 all_right_message = '✅ Все верно'
 confirm_message = '✅ Подтвердить заказ'
+
+
+def stop_markup(idx):
+    global product_cb_2
+    markup = InlineKeyboardMarkup()
+    stop = InlineKeyboardButton("⏸ Стоп", callback_data=product_cb_2.new(id=idx, action='stop'))
+    markup.add(stop)
+    return markup
+
+
+def start_markup(idx):
+    global product_cb_2
+    markup = InlineKeyboardMarkup()
+    start = InlineKeyboardButton("▶ Старт", callback_data=product_cb_2.new(id=idx, action='start'))
+    markup.add(start)
+    return markup
 
 
 def confirm_markup():
@@ -49,8 +65,81 @@ def submit_markup():
 
 category_cb = CallbackData('category', 'id', 'action')
 product_cb = CallbackData('product', 'id', 'action')
+category_cb_2 = CallbackData('category_2', 'id', 'action')
+product_cb_2 = CallbackData('product_2', 'id', 'action')
 
 delete_category = '🗑️ Удалить категорию'
+
+
+@dp.message_handler(IsAdmin(), text=start_stop)
+async def start_stop_commands(message: types.Message):
+    markup = InlineKeyboardMarkup()
+
+    for idx, title in db.fetchall('SELECT * FROM categories'):
+        markup.add(InlineKeyboardButton(
+            title, callback_data=category_cb_2.new(id=idx, action='view')))
+
+    await message.answer('Настройка категорий:', reply_markup=markup)
+
+
+@dp.callback_query_handler(IsAdmin(), category_cb_2.filter(action='view'))
+async def category_2_callback_heandler(call: types.CallbackQuery, callback_data: dict):
+    category_idx = callback_data['id']
+
+    products = db.fetchall('''SELECT * FROM products product
+        WHERE product.tag = (SELECT title FROM categories WHERE idx=?)''',
+                           (category_idx,))
+
+    await call.message.delete()
+    await call.answer('Все добавленные товары в эту категорию.')
+    await show_products_2(call.message, products, category_idx)
+
+
+async def show_products_2(m, products, category_idx):
+    await bot.send_chat_action(m.chat.id, ChatActions.TYPING)
+    status = db.fetchall("SELECT * FROM status")
+
+    for idx, title, body, image, price, tag in products:
+        text = f'<b>{title}</b>\n\n{body}\n\nЦена: {price} рублей.'
+        for id, stat in status:
+            if idx in id and stat in "start":
+                if image:
+                    await m.answer_photo(photo=image,
+                                         caption=text,
+                                         reply_markup=stop_markup(idx))
+                else:
+                    await m.answer(text=text, reply_markup=stop_markup(idx))
+            elif idx in id and stat in 'stop':
+                if image:
+                    await m.answer_photo(photo=image,
+                                         caption=text,
+                                         reply_markup=start_markup(idx))
+                else:
+                    await m.answer(text=text, reply_markup=start_markup(idx))
+
+
+@dp.callback_query_handler(IsAdmin(), product_cb_2.filter(action='stop'))
+async def stop_menu(call: types.CallbackQuery, callback_data: dict):
+    product_idx = callback_data['id']
+    markup = InlineKeyboardMarkup()
+    start = InlineKeyboardButton("▶ Старт", callback_data=product_cb_2.new(id=product_idx, action='start'))
+    markup.add(start)
+    db.query("DELETE FROM status WHERE idx=?", (product_idx,))
+    db.query("INSERT INTO status VALUES (?, ?)", (product_idx, 'stop'))
+    await call.message.edit_reply_markup(reply_markup=markup)
+    await call.answer("Готово")
+
+
+@dp.callback_query_handler(IsAdmin(), product_cb_2.filter(action='start'))
+async def start_menu(call: types.CallbackQuery, callback_data: dict):
+    product_idx = callback_data['id']
+    markup = InlineKeyboardMarkup()
+    stop = InlineKeyboardButton("⏸ Стоп", callback_data=product_cb_2.new(id=product_idx, action='stop'))
+    markup.add(stop)
+    db.query("DELETE FROM status WHERE idx=?", (product_idx,))
+    db.query("INSERT INTO status VALUES (?, ?)", (product_idx, 'start'))
+    await call.message.edit_reply_markup(reply_markup=markup)
+    await call.answer("Готово")
 
 
 @dp.message_handler(IsAdmin(), text=settings_catalogue)

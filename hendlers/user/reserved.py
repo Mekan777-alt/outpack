@@ -100,7 +100,7 @@ async def cmd_start(message: types.Message):
         await FSMbron.name.set()
         await message.answer('👤 На чье имя бронируем стол?', reply_markup=markup)
     else:
-        await message.answer('Приносим извинения, на данный момент бронь отменена.')
+        await message.answer('Приносим извинения, на данный момент брони не принимаются.')
 
 
 @dp.message_handler(IsUser(), state=FSMbron.name)
@@ -112,7 +112,7 @@ async def load_name(message: types.Message, state: FSMContext):
             await message.reply('📅 На какую дату?', reply_markup=date_day())
         else:
             markup = ReplyKeyboardMarkup(resize_keyboard=True)
-            markup.row(btnMenu, btnbar, btnTime).add(btnBrn, btndlv)
+            markup.row(btnMenu, btnbar, btnTime).add(btnBrn, btndlv, sos)
             await bot.send_message(message.from_user.id, "ПЕРЕХОД НА ГЛАВНОЕ МЕНЮ", reply_markup=markup)
             await state.finish()
 
