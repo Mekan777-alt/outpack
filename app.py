@@ -39,13 +39,13 @@ async def cmd_start(message: types.Message, state: FSMContext):
         message.from_user), reply_markup=markup)
 
 
-@dp.message_handler(IsAdmin(), commands="start")
-async def cmd_start(message: types.Message):
-    markup = ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.add(settings_regime)
-    #markup.add(settings_catalogue)
-    markup.add(start_stop)
-    await message.answer('''ВКЛЮЧЕН РЕЖИМ АДМИНИСТРАТОРА''', reply_markup=markup)
+# @dp.message_handler(IsAdmin(), commands="start")
+# async def cmd_start(message: types.Message):
+#     markup = ReplyKeyboardMarkup(resize_keyboard=True)
+#     markup.add(settings_regime)
+#     #markup.add(settings_catalogue)
+#     markup.add(start_stop)
+#     await message.answer('''ВКЛЮЧЕН РЕЖИМ АДМИНИСТРАТОРА''', reply_markup=markup)
 
 
 async def on_startup(dp):

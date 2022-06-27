@@ -5,7 +5,7 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from data.database import Database
 
 loop = asyncio.get_event_loop()
-ADMINS = [5161108473]#[5443287345]#[337708421]
+ADMINS = []#[5161108473]#[5443287345]#[337708421]
 TOKEN = "5153177753:AAGN27mmyBzn_nDbc3Wqx7TJwYIG2UQdBMs"
 TOKEN_PAYMENTS = "401643678:TEST:d32a6a58-53b5-4453-94a3-29b46ac62435"
 DELIVERY_CHAT = "-661196706"
