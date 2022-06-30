@@ -58,7 +58,7 @@ timeBtn.add(b11).add(b12).add(b13).add(b14).add(b15).add(b16).add(b17).add(b18).
 
 def date_day():
     markup = ReplyKeyboardMarkup()
-    first_date = date.today() + timedelta(days=1)
+    first_date = date.today() + timedelta(days=0)
     duration = timedelta(days=14)
     for d in range(duration.days + 1):
         day = first_date + timedelta(days=d)
@@ -183,6 +183,6 @@ async def cencel_message(message: types.Message, state: FSMContext):
 @dp.message_handler(IsUser(), text=btn_tm)
 async def otm(message: types.Message, state: FSMContext):
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.row(btnMenu, btnbar, btnTime).add(btnBrn, btndlv)
+    markup.row(btnMenu, btnbar, btnTime).add(btnBrn, btndlv, sos)
     await bot.send_message(message.from_user.id, "Бронь отменена", reply_markup=markup)
     await state.finish()

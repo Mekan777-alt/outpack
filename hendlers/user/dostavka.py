@@ -113,11 +113,13 @@ def time_dlv():
     current_time = str(datetime.now().time())
     return current_time
 
-
+print(time_dlv())
 @dp.message_handler(IsUser(), text=btndlv)
 async def dyl_start(message: types.Message):
-    if time_dlv()[0] == '2' and time_dlv()[1] == '3':
-        await message.answer("Доставка временно не работает")
+    if time_dlv()[0] == '2' and time_dlv()[1] == '3' \
+            or time_dlv()[0] == '0' \
+            or time_dlv()[0] == '1' and time_dlv()[1] == '0':
+        await message.answer("Доставка принимается с 11:00 до 23:00")
     else:
         is_allowed = db.fetchall('SELECT * FROM regime')
         if is_allowed[0][1] == 1:
