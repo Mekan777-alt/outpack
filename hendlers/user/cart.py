@@ -354,9 +354,10 @@ async def confirm(message, state, phone_number):
         total_price = 0
         an = ''
         for title, price, count_in_cart, info in data['products'].values():
-            tp = count_in_cart * price
-            an += f'<b>{title}</b> - {count_in_cart}шт\n{info}\n\n'
-            total_price += tp
+            if count_in_cart > 0:
+                tp = count_in_cart * price
+                an += f'<b>{title}</b> - {count_in_cart}шт\n{info}\n\n'
+                total_price += tp
 
         address = ""
 

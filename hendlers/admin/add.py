@@ -257,13 +257,6 @@ async def delete_category_handler(message: types.Message, state: FSMContext):
 """add product"""
 
 
-@dp.message_handler(text=back)
-async def vack_menu(message: types.Message):
-    markup = ReplyKeyboardRemove()
-    await message.answer("Переход на настройки категории", reply_markup=markup)
-    await process_catalogue(message)
-
-
 class ProductState(StatesGroup):
     title = State()
     body = State()

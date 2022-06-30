@@ -6,6 +6,7 @@ from aiogram import types
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, ChatActions
 from hendlers.user.catalog import btnnaz
 from aiogram.dispatcher import FSMContext
+from datetime import datetime
 
 btn_instr = "⚙️ ИНСТРУКЦИЯ"
 pay = "💳 СПОСОБ ОПЛАТЫ"
@@ -95,7 +96,7 @@ category_cb = CallbackData('category', 'id', 'action')
 def categories_markup():
     markup = InlineKeyboardMarkup()
     for idx, title in db.fetchall('SELECT * FROM categories'):
-        markup.add(InlineKeyboardButton(title, callback_data=category_cb.new(id=idx, action='view')))
+        markup.add(InlineKeyboardButton(title, callback_data=category_cb.new(id=idx, action='view_2')))
 
     return markup
 
@@ -108,15 +109,22 @@ def dyl_markup():
     return markup
 
 
+def time_dlv():
+    current_time = str(datetime.now().time())
+    return current_time
+
+
 @dp.message_handler(IsUser(), text=btndlv)
 async def dyl_start(message: types.Message):
-    is_allowed = db.fetchall('SELECT * FROM regime')
-
-    if is_allowed[0][1] == 1:
-        await message.answer("Минимальная сумма заказа 2000 рублей", reply_markup=dyl_markup())
-        await message.answer("ВЫБЕРИТЕ РАЗДЕЛ", reply_markup=categories_markup())
+    if time_dlv()[0] == '2' and time_dlv()[1] == '3':
+        await message.answer("Доставка временно не работает")
     else:
-        await message.answer("Приносим извинения, на данный момент доставка не доступна")
+        is_allowed = db.fetchall('SELECT * FROM regime')
+        if is_allowed[0][1] == 1:
+            await message.answer("Минимальная сумма заказа 2000 рублей", reply_markup=dyl_markup())
+            await message.answer("ВЫБЕРИТЕ РАЗДЕЛ", reply_markup=categories_markup())
+        else:
+            await message.answer("Приносим извинения, на данный момент доставка не доступна")
 
 
 @dp.message_handler(IsUser(), text='📖 Меню')
@@ -134,7 +142,7 @@ async def instr_procces(message: types.Message):
     await message.answer("https://telegra.ph/Instrukciya-06-10-7", reply_markup=dyl_markup())
 
 
-@dp.callback_query_handler(IsUser(), category_cb.filter(action='view'))
+@dp.callback_query_handler(IsUser(), category_cb.filter(action='view_2'))
 async def category_callback_handler(query: types.CallbackQuery, callback_data: dict):
     products = db.fetchall('''SELECT * FROM products
     WHERE products.tag = (SELECT title FROM categories WHERE idx=?)''',
