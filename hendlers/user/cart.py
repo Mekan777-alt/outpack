@@ -56,6 +56,23 @@ def product_markup_2(idx, count):
     return markup
 
 
+def device_():
+    markup = ReplyKeyboardMarkup()
+    yes = "Да"
+    not_ = "Нет"
+    markup.add(yes, not_)
+    return markup
+
+
+def device_count():
+    markup = ReplyKeyboardMarkup()
+    for i in range(1, 6):
+        i = str(i)
+        markup.add(i)
+
+    return markup
+
+
 @dp.message_handler(IsUser(), text=cart)
 async def process_cart(message: types.Message, state: FSMContext):
     is_allowed = db.fetchall('SELECT * FROM regime')
@@ -163,6 +180,8 @@ class CheckoutState(StatesGroup):
     name = State()
     address = State()
     phone_number = State()
+    device = State()
+    count = State()
     confirm = State()
 
 
@@ -337,7 +356,7 @@ async def process_phone_number(message: types.Message, state: FSMContext):
         data['phone_number'] = message.text
 
     await CheckoutState.next()
-    await confirm(message, state, message.text)
+    await message.answer("Приборы?", reply_markup=device_())
 
 
 @dp.message_handler(IsUser(), content_types=ContentType.CONTACT, state=CheckoutState.phone_number)
@@ -346,10 +365,30 @@ async def handle_contact(message: Message, state: FSMContext):
         data['phone_number'] = message.contact['phone_number']
 
     await CheckoutState.next()
-    await confirm(message, state, message.contact['phone_number'])
+    await message.answer("Положить приборы?", reply_markup=device_())
 
 
-async def confirm(message, state, phone_number):
+@dp.message_handler(IsUser(), state=CheckoutState.count)
+async def check_count(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['count'] = message.text
+    await CheckoutState.next()
+    await confirm(message, state, "Да")
+
+
+@dp.message_handler(IsUser(), text=["Да", "Нет"], state=CheckoutState.device)
+async def check_device(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['device'] = message.text
+        if message.text == 'Да':
+            await CheckoutState.next()
+            await message.answer("Количество:", reply_markup=device_count())
+        else:
+            await CheckoutState.confirm.set()
+            await confirm(message, state, message.text)
+
+
+async def confirm(message, state, text):
     async with state.proxy() as data:
         total_price = 0
         an = ''
@@ -367,12 +406,20 @@ async def confirm(message, state, phone_number):
         else:
             variant = "Самовывоз"
 
+        device = ""
+
+        if text == "Да":
+            device = f"Приборы: Положить\n" \
+                     f"Количество приборов: {data['count']}\n"
+        elif text == "Нет":
+            device = "Приборы: Нет\n"
         text = f"Убедитесь, что все правильно оформлено и подтвердите заказ.\n\n" \
                f"<b>Данные заказа</b>\n" \
                f"Способ получения: {variant}\n" \
+               f"{device}" \
                f"{address}" \
                f"Получатель: {data['name']}\n" \
-               f"Номер телефона получателя: {phone_number}\n" \
+               f"Номер телефона получателя: {data['phone_number']}\n" \
                f"Общая стоимость: {total_price} рублей\n\n" \
                f"Ваш заказ:\n{an}"
 

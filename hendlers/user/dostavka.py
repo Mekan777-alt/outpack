@@ -113,7 +113,7 @@ def time_dlv():
     current_time = str(datetime.now().time())
     return current_time
 
-print(time_dlv())
+
 @dp.message_handler(IsUser(), text=btndlv)
 async def dyl_start(message: types.Message):
     if time_dlv()[0] == '2' and time_dlv()[1] == '3' \
