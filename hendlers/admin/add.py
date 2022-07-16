@@ -402,6 +402,8 @@ async def process_confirm(message: types.Message, state: FSMContext):
 
         db.query('INSERT INTO products VALUES (?, ?, ?, ?, ?, ?)',
                  (idx, title, body, image, int(price), tag))
+        db.query('INSERT INTO status VALUES (?, ?)',
+                (idx, 'start'))
 
     await state.finish()
     await message.answer('Готово!', reply_markup=ReplyKeyboardRemove())

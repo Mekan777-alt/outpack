@@ -500,11 +500,20 @@ async def process_successful_payment(message: types.Message, state: FSMContext):
         else:
             variant = "Самовывоз"
 
+        device = ""
+
+        if data['device'] == "Да":
+            device = f"Приборы: Положить\n" \
+                     f"Количество приборов: {data['count']}\n"
+        elif data['device'] == "Нет":
+            device = "Приборы: Нет\n"
+
         await bot.send_message(DELIVERY_CHAT, f"<b>{variant}</b>\n\n"
                                              f"Имя получателя: {data['name']}\n"
                                              f"Время: {now.hour}:{now.minute}\n"
                                              f"Дата: {now.date().strftime('%d-%m-%y')}\n"
                                              f"Способ получения: {data['dylevery']}\n"
+                                             f"{device}"
                                              f"{address}"
                                              f"Номер телефона: {data['phone_number']}\n"
                                              f"Общая стоимость: {total_price} рублей\n"

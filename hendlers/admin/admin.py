@@ -1,5 +1,5 @@
 from aiogram.types import ReplyKeyboardMarkup
-from app import settings_regime, start_stop
+from app import settings_regime, start_stop, settings_catalogue
 from config import dp
 from aiogram import types
 from aiogram.dispatcher import FSMContext
@@ -37,7 +37,7 @@ async def check_password(message: types.Message, state: FSMContext):
     if message.text in password:
         markup = ReplyKeyboardMarkup(resize_keyboard=True)
         markup.add(settings_regime)
-        # markup.add(settings_catalogue)
+        #markup.add(settings_catalogue)
         markup.add(start_stop)
         await message.answer('''ВКЛЮЧЕН РЕЖИМ АДМИНИСТРАТОРА''', reply_markup=markup)
     await state.finish()
